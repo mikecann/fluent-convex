@@ -1,78 +1,122 @@
 import { v } from "convex/values";
-import { query, mutation, action } from "./_generated/server";
-import { api } from "./_generated/api";
+import { cvx } from "./lib3/convex_builder";
 
-// Write your Convex functions in any file inside this directory (`convex`).
-// See https://docs.convex.dev/functions for more.
-
-// You can read data from the database via a query:
-export const listNumbers = query({
-  // Validators for arguments.
-  args: {
-    count: v.number(),
-  },
-
-  // Query implementation.
-  handler: async (ctx, args) => {
-    //// Read the database as many times as you need here.
-    //// See https://docs.convex.dev/database/reading-data.
+// Example: Simple query without middleware
+export const listNumbersSimple = cvx
+  .query()
+  .args({ count: v.number() })
+  .handler(async (ctx, args) => {
     const numbers = await ctx.db
       .query("numbers")
-      // Ordered by _creationTime, return most recent
       .order("desc")
       .take(args.count);
+
     return {
       viewer: (await ctx.auth.getUserIdentity())?.name ?? null,
       numbers: numbers.reverse().map((number) => number.value),
     };
-  },
+  });
+
+// Define reusable authentication middleware using the oRPC pattern
+const authMiddleware = cvx.query().middleware(async ({ context, next }) => {
+  const identity = await context.auth.getUserIdentity();
+  if (!identity) {
+    throw new Error("Unauthorized");
+  }
+
+  return next({
+    context: {
+      ...context,
+      user: {
+        id: identity.subject,
+        name: identity.name ?? "Unknown",
+      },
+    },
+  });
 });
 
-// You can write data to the database via a mutation:
-export const addNumber = mutation({
-  // Validators for arguments.
-  args: {
-    value: v.number(),
-  },
+// Now we can use it directly without calling it!
+export const listNumbersAuth = cvx
+  .query()
+  .use(authMiddleware)
+  .args({ count: v.number() })
+  .handler(async (ctx, args) => {
+    const numbers = await ctx.db
+      .query("numbers")
+      .order("desc")
+      .take(args.count);
 
-  // Mutation implementation.
-  handler: async (ctx, args) => {
-    //// Insert or modify documents in the database here.
-    //// Mutations can also read from the database like queries.
-    //// See https://docs.convex.dev/database/writing-data.
+    return {
+      viewer: ctx.user.name, // user is available from middleware!
+      numbers: numbers.reverse().map((number) => number.value),
+    };
+  });
 
-    const id = await ctx.db.insert("numbers", { value: args.value });
+// Mutation with the same middleware
+export const addNumber = cvx
+  .mutation()
+  .use(authMiddleware)
+  .args({ value: v.number() })
+  .returns(v.id("numbers"))
+  .handler(async (ctx, args) => {
+    console.log(`User ${ctx.user.name} is adding ${args.value}`);
+    return await ctx.db.insert("numbers", { value: args.value });
+  });
 
-    console.log("Added new document with id:", id);
-    // Optionally, return a value from your mutation.
-    // return id;
-  },
+// Multiple middleware composition
+const addTimestamp = cvx.query().middleware(async ({ context, next }) => {
+  return next({
+    context: {
+      ...context,
+      timestamp: Date.now(),
+    },
+  });
 });
 
-// You can fetch data from and send data to third-party APIs via an action:
-export const myAction = action({
-  // Validators for arguments.
-  args: {
-    first: v.number(),
-    second: v.string(),
-  },
+export const listNumbersWithTimestamp = cvx
+  .query()
+  .use(authMiddleware)
+  .use(addTimestamp)
+  .args({ count: v.number() })
+  .handler(async (ctx, args) => {
+    const numbers = await ctx.db
+      .query("numbers")
+      .order("desc")
+      .take(args.count);
 
-  // Action implementation.
-  handler: async (ctx, args) => {
-    //// Use the browser-like `fetch` API to send HTTP requests.
-    //// See https://docs.convex.dev/functions/actions#calling-third-party-apis-and-using-npm-packages.
-    // const response = await ctx.fetch("https://api.thirdpartyservice.com");
-    // const data = await response.json();
+    return {
+      viewer: ctx.user.name,
+      timestamp: ctx.timestamp,
+      numbers: numbers.map((n) => n.value),
+    };
+  });
 
-    //// Query data by running Convex queries.
-    const data = await ctx.runQuery(api.myFunctions.listNumbers, {
-      count: 10,
-    });
-    console.log(data);
+// Internal query
+export const internalListAll = cvx
+  .query()
+  .internal()
+  .args({})
+  .handler(async (ctx, _args) => {
+    const numbers = await ctx.db.query("numbers").collect();
+    return numbers;
+  });
 
-    //// Write data by running Convex mutations.
-    await ctx.runMutation(api.myFunctions.addNumber, {
-      value: args.first,
-    });
-  },
-});
+// You can also define middleware inline
+export const quickQuery = cvx
+  .query()
+  .use(
+    cvx.query().middleware(async ({ context, next }) => {
+      return next({
+        context: {
+          ...context,
+          requestId: Math.random().toString(36).substring(7),
+        },
+      });
+    }),
+  )
+  .args({ limit: v.number() })
+  .handler(async (ctx, args) => {
+    console.log(`Request ${ctx.requestId}`);
+    const numbers = await ctx.db.query("numbers").take(args.limit);
+    return numbers;
+  });
