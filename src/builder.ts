@@ -28,6 +28,9 @@ import {
   type ReturnsValidatorInput,
 } from "./zod_support";
 
+type InferredArgs<T extends ConvexArgsValidator | undefined> =
+  T extends ConvexArgsValidator ? InferArgs<T> : Record<never, never>;
+
 interface ConvexBuilderDef<
   TFunctionType extends FunctionType | undefined,
   TArgsValidator extends ConvexArgsValidator | undefined,
@@ -62,14 +65,11 @@ export class ConvexBuilder<
       TArgsValidator,
       TReturnsValidator,
       TVisibility
-    >,
+    >
   ) {
     this.def = def;
   }
 
-  /**
-   * Sets the initial context type hint for middleware.
-   */
   $context<U extends Context>(): ConvexBuilder<
     TFunctionType,
     U & Record<never, never>,
@@ -84,20 +84,14 @@ export class ConvexBuilder<
     });
   }
 
-  /**
-   * Creates a middleware function.
-   */
   middleware<UOutContext extends Context>(
-    middleware: ConvexMiddleware<TInitialContext, UOutContext>,
+    middleware: ConvexMiddleware<TInitialContext, UOutContext>
   ): ConvexMiddleware<TInitialContext, UOutContext> {
     return middleware;
   }
 
-  /**
-   * Applies middleware to the pipeline.
-   */
   use<UOutContext extends Context>(
-    middleware: ConvexMiddleware<TCurrentContext, UOutContext>,
+    middleware: ConvexMiddleware<TCurrentContext, UOutContext>
   ): ConvexBuilder<
     TFunctionType,
     TInitialContext,
@@ -112,9 +106,6 @@ export class ConvexBuilder<
     });
   }
 
-  /**
-   * Sets this as a query function.
-   */
   query(): ConvexBuilder<
     "query",
     TInitialContext extends Record<never, never> ? QueryCtx : TInitialContext,
@@ -129,9 +120,6 @@ export class ConvexBuilder<
     }) as any;
   }
 
-  /**
-   * Sets this as a mutation function.
-   */
   mutation(): ConvexBuilder<
     "mutation",
     TInitialContext extends Record<never, never>
@@ -150,9 +138,6 @@ export class ConvexBuilder<
     }) as any;
   }
 
-  /**
-   * Sets this as an action function.
-   */
   action(): ConvexBuilder<
     "action",
     TInitialContext extends Record<never, never> ? ActionCtx : TInitialContext,
@@ -167,9 +152,6 @@ export class ConvexBuilder<
     }) as any;
   }
 
-  /**
-   * Sets the function as internal.
-   */
   internal(): ConvexBuilder<
     TFunctionType,
     TInitialContext,
@@ -184,11 +166,8 @@ export class ConvexBuilder<
     });
   }
 
-  /**
-   * Sets the input validation schema (Convex validators or Zod schema).
-   */
   input<UInput extends ValidatorInput>(
-    validator: UInput,
+    validator: UInput
   ): ConvexBuilder<
     TFunctionType,
     TInitialContext,
@@ -197,7 +176,6 @@ export class ConvexBuilder<
     TReturnsValidator,
     TVisibility
   > {
-    // Convert Zod schema to Convex validator if needed
     const convexValidator = isZodSchema(validator)
       ? (toConvexValidator(validator) as ConvexArgsValidator)
       : (validator as ConvexArgsValidator);
@@ -208,11 +186,8 @@ export class ConvexBuilder<
     }) as any;
   }
 
-  /**
-   * Sets the output validation schema (Convex validator or Zod schema).
-   */
   returns<UReturns extends ReturnsValidatorInput>(
-    validator: UReturns,
+    validator: UReturns
   ): ConvexBuilder<
     TFunctionType,
     TInitialContext,
@@ -221,7 +196,6 @@ export class ConvexBuilder<
     ConvexReturnsValidator,
     TVisibility
   > {
-    // Convert Zod schema to Convex validator if needed
     const convexValidator = isZodSchema(validator)
       ? (toConvexValidator(validator) as ConvexReturnsValidator)
       : (validator as ConvexReturnsValidator);
@@ -232,64 +206,17 @@ export class ConvexBuilder<
     }) as any;
   }
 
-  /**
-   * Defines the handler and creates the registered Convex function.
-   */
   handler<TReturn>(
     handlerFn: (options: {
       context: TCurrentContext;
-      input: TArgsValidator extends ConvexArgsValidator
-        ? InferArgs<TArgsValidator>
-        : Record<never, never>;
-    }) => Promise<TReturn>,
+      input: InferredArgs<TArgsValidator>;
+    }) => Promise<TReturn>
   ): TFunctionType extends "query"
-    ? TVisibility extends "public"
-      ? RegisteredQuery<
-          "public",
-          TArgsValidator extends ConvexArgsValidator
-            ? InferArgs<TArgsValidator>
-            : Record<never, never>,
-          Promise<TReturn>
-        >
-      : RegisteredQuery<
-          "internal",
-          TArgsValidator extends ConvexArgsValidator
-            ? InferArgs<TArgsValidator>
-            : Record<never, never>,
-          Promise<TReturn>
-        >
+    ? RegisteredQuery<TVisibility, InferredArgs<TArgsValidator>, Promise<TReturn>>
     : TFunctionType extends "mutation"
-      ? TVisibility extends "public"
-        ? RegisteredMutation<
-            "public",
-            TArgsValidator extends ConvexArgsValidator
-              ? InferArgs<TArgsValidator>
-              : Record<never, never>,
-            Promise<TReturn>
-          >
-        : RegisteredMutation<
-            "internal",
-            TArgsValidator extends ConvexArgsValidator
-              ? InferArgs<TArgsValidator>
-              : Record<never, never>,
-            Promise<TReturn>
-          >
+      ? RegisteredMutation<TVisibility, InferredArgs<TArgsValidator>, Promise<TReturn>>
       : TFunctionType extends "action"
-        ? TVisibility extends "public"
-          ? RegisteredAction<
-              "public",
-              TArgsValidator extends ConvexArgsValidator
-                ? InferArgs<TArgsValidator>
-                : Record<never, never>,
-              Promise<TReturn>
-            >
-          : RegisteredAction<
-              "internal",
-              TArgsValidator extends ConvexArgsValidator
-                ? InferArgs<TArgsValidator>
-                : Record<never, never>,
-              Promise<TReturn>
-            >
+        ? RegisteredAction<TVisibility, InferredArgs<TArgsValidator>, Promise<TReturn>>
         : never {
     const {
       functionType,
@@ -301,20 +228,16 @@ export class ConvexBuilder<
 
     if (!functionType) {
       throw new Error(
-        "Function type not set. Call .query(), .mutation(), or .action() first.",
+        "Function type not set. Call .query(), .mutation(), or .action() first."
       );
     }
 
-    // Compose middleware with handler
     const composedHandler = async (
       baseCtx: QueryCtx | MutationCtx | ActionCtx,
-      baseArgs: TArgsValidator extends ConvexArgsValidator
-        ? InferArgs<TArgsValidator>
-        : Record<never, never>,
+      baseArgs: InferredArgs<TArgsValidator>
     ) => {
       let currentContext: any = baseCtx;
 
-      // Run middleware chain
       for (const middleware of middlewares) {
         const result = await middleware({
           context: currentContext,
@@ -329,39 +252,20 @@ export class ConvexBuilder<
       });
     };
 
-    // Build Convex config
     const config = {
       args: argsValidator || {},
       ...(returnsValidator ? { returns: returnsValidator } : {}),
       handler: composedHandler,
     } as any;
 
-    // Register with appropriate Convex function
-    if (functionType === "query") {
-      return (
-        visibility === "public"
-          ? queryGeneric(config)
-          : internalQueryGeneric(config)
-      ) as any;
-    }
+    const isPublic = visibility === "public";
+    const registrationFn = {
+      query: isPublic ? queryGeneric : internalQueryGeneric,
+      mutation: isPublic ? mutationGeneric : internalMutationGeneric,
+      action: isPublic ? actionGeneric : internalActionGeneric,
+    }[functionType];
 
-    if (functionType === "mutation") {
-      return (
-        visibility === "public"
-          ? mutationGeneric(config)
-          : internalMutationGeneric(config)
-      ) as any;
-    }
-
-    if (functionType === "action") {
-      return (
-        visibility === "public"
-          ? actionGeneric(config)
-          : internalActionGeneric(config)
-      ) as any;
-    }
-
-    throw new Error(`Unknown function type: ${functionType}`);
+    return registrationFn(config) as any;
   }
 }
 
@@ -376,4 +280,3 @@ export const cvx = new ConvexBuilder<
   middlewares: [],
   visibility: "public",
 });
-
