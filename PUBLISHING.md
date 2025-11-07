@@ -20,7 +20,7 @@ To enable automatic publishing from GitHub Actions:
 4. Under "Trusted publishers", click **"Add provider"**
 5. Fill in the form:
    - **Provider:** GitHub Actions
-   - **Repository owner:** `mikeysee`
+   - **Repository owner:** `mikecann`
    - **Repository name:** `fluent-convex`
    - **Workflow filename:** `publish.yml`
    - **Environment name:** (leave blank)

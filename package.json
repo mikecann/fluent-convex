@@ -42,7 +42,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/mikeysee/fluent-convex.git"
+    "url": "git+https://github.com/mikecann/fluent-convex.git"
   },
   "peerDependencies": {
     "convex": "^1.28.0",
