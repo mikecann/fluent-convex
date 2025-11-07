@@ -18,7 +18,6 @@
   },
   "dependencies": {
     "@orpc/shared": "^1.10.2",
-    "@rollup/rollup-win32-x64-msvc": "^4.52.5",
     "@standard-schema/spec": "^1.0.0",
     "convex": "^1.28.0",
     "convex-helpers": "^0.1.104",
