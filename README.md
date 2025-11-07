@@ -1,4 +1,4 @@
-# fluent-convex
+# Fluent Convex
 
 A fluent API builder for Convex functions with middleware support, inspired by [oRPC](https://orpc.unnoq.com/).
 
