@@ -35,11 +35,11 @@
     "zod",
     "typescript"
   ],
-  "author": "",
+  "author": "Mike Cann",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/fluent-convex.git"
+    "url": "https://github.com/mikeysee/fluent-convex.git"
   },
   "peerDependencies": {
     "convex": "^1.28.0",
