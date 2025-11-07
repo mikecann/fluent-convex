@@ -9,7 +9,7 @@ export function isZodSchema(value: any): value is z.ZodTypeAny {
 }
 
 export function toConvexValidator<T extends z.ZodTypeAny>(
-  schema: T,
+  schema: T
 ): PropertyValidators | GenericValidator {
   return zodToConvex(schema) as any;
 }
@@ -21,4 +21,3 @@ export type ValidatorInput =
   | z.ZodEffects<any>;
 
 export type ReturnsValidatorInput = GenericValidator | z.ZodType;
-

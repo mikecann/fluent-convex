@@ -28,4 +28,3 @@ export type ActionCtx = GenericActionCtx<GenericDataModel>;
 
 export type FunctionType = "query" | "mutation" | "action";
 export type Visibility = "public" | "internal";
-

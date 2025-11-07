@@ -13,9 +13,8 @@ export interface ConvexMiddleware<
   TOutContext extends Context,
 > {
   (
-    options: ConvexMiddlewareOptions<TInContext>,
+    options: ConvexMiddlewareOptions<TInContext>
   ): Promisable<{ context: TOutContext }>;
 }
 
 export type AnyConvexMiddleware = ConvexMiddleware<any, any>;
-

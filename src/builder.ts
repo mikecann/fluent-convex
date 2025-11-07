@@ -212,11 +212,23 @@ export class ConvexBuilder<
       input: InferredArgs<TArgsValidator>;
     }) => Promise<TReturn>
   ): TFunctionType extends "query"
-    ? RegisteredQuery<TVisibility, InferredArgs<TArgsValidator>, Promise<TReturn>>
+    ? RegisteredQuery<
+        TVisibility,
+        InferredArgs<TArgsValidator>,
+        Promise<TReturn>
+      >
     : TFunctionType extends "mutation"
-      ? RegisteredMutation<TVisibility, InferredArgs<TArgsValidator>, Promise<TReturn>>
+      ? RegisteredMutation<
+          TVisibility,
+          InferredArgs<TArgsValidator>,
+          Promise<TReturn>
+        >
       : TFunctionType extends "action"
-        ? RegisteredAction<TVisibility, InferredArgs<TArgsValidator>, Promise<TReturn>>
+        ? RegisteredAction<
+            TVisibility,
+            InferredArgs<TArgsValidator>,
+            Promise<TReturn>
+          >
         : never {
     const {
       functionType,
