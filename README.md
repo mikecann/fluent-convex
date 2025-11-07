@@ -76,18 +76,16 @@ export const listNumbersAuth = cvx
 import { z } from "zod";
 import { cvx } from "fluent-convex";
 
-const NumberInputSchema = z.object({
-  count: z.number().int().min(1).max(100),
-});
-
 export const listNumbersWithZod = cvx
   .query()
-  .input(NumberInputSchema)
+  .input(
+    z.object({
+      count: z.number().int().min(1).max(100),
+    })
+  )
   .handler(async ({ context, input }) => {
     // input.count is properly typed as number
-    const numbers = await context.db
-      .query("numbers")
-      .take(input.count);
+    const numbers = await context.db.query("numbers").take(input.count);
 
     return { numbers: numbers.map((n) => n.value) };
   });
@@ -110,6 +108,7 @@ export const listNumbersWithZod = cvx
 ## Example
 
 Check out the `/example` directory for a complete working example with various use cases including:
+
 - Simple queries and mutations
 - Middleware composition
 - Zod integration
@@ -119,6 +118,7 @@ Check out the `/example` directory for a complete working example with various u
 ## Development
 
 This is a monorepo structure:
+
 - `/src` - The npm package source code
 - `/example` - Example Convex app using the package
 
