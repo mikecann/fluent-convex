@@ -1,64 +1,21 @@
 {
-  "name": "fluent-convex",
+  "name": "fluent-convex-monorepo",
   "version": "0.3.0",
-  "description": "A fluent API builder for Convex functions with middleware support, inspired by oRPC",
+  "private": true,
   "type": "module",
-  "main": "./dist/index.js",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
-    }
-  },
-  "files": [
-    "dist",
-    "src",
-    "README.md",
-    "LICENSE.txt"
+  "workspaces": [
+    "packages/*",
+    "apps/*"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
-    "dev": "tsc -p tsconfig.build.json --watch",
-    "typecheck": "tsc --noEmit",
-    "test": "vitest run --typecheck",
-    "dev:test": "vitest --typecheck",
-    "example": "cd example && npm run",
-    "prepublishOnly": "npm run build"
-  },
-  "keywords": [
-    "convex",
-    "orpc",
-    "middleware",
-    "fluent-api",
-    "builder",
-    "zod",
-    "typescript"
-  ],
-  "author": "Mike Cann",
-  "license": "MIT",
-  "publishConfig": {
-    "access": "public"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/mikecann/fluent-convex.git"
-  },
-  "peerDependencies": {
-    "convex": "^1.28.0",
-    "zod": "^3.0.0"
-  },
-  "dependencies": {
-    "convex-helpers": "^0.1.104"
+    "build": "npm run build --workspace=packages/fluent-convex",
+    "dev": "npm run dev --workspace=packages/fluent-convex",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "dev:test": "npm run dev:test --workspace=packages/fluent-convex"
   },
   "devDependencies": {
-    "@types/node": "^22.13.10",
-    "@vitest/ui": "^2.1.8",
-    "convex": "^1.28.0",
     "prettier": "^3.5.3",
-    "typescript": "~5.7.2",
-    "vitest": "^2.1.8",
-    "zod": "^3.25.76"
+    "typescript": "~5.7.2"
   }
 }

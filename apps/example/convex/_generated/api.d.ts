@@ -8,11 +8,6 @@
  * @module
  */
 
-import type * as lib_builder from "../../../src/builder.js";
-import type * as lib_index from "../../../src/index.js";
-import type * as lib_middleware from "../../../src/middleware.js";
-import type * as lib_types from "../../../src/types.js";
-import type * as lib_zod_support from "../../../src/zod_support.js";
 import type * as myFunctions from "../myFunctions.js";
 
 import type {
@@ -30,11 +25,6 @@ import type {
  * ```
  */
 declare const fullApi: ApiFromModules<{
-  "lib/builder": typeof lib_builder;
-  "lib/index": typeof lib_index;
-  "lib/middleware": typeof lib_middleware;
-  "lib/types": typeof lib_types;
-  "lib/zod_support": typeof lib_zod_support;
   myFunctions: typeof myFunctions;
 }>;
 declare const fullApiWithMounts: typeof fullApi;

@@ -22,12 +22,12 @@
   },
   "include": [
     "./**/*",
-    "../../src/builder.test-d.ts",
-    "../../src/builder.ts",
-    "../../src/index.ts",
-    "../../src/middleware.ts",
-    "../../src/types.ts",
-    "../../src/zod_support.ts"
+    "../../../packages/fluent-convex/src/builder.test-d.ts",
+    "../../../packages/fluent-convex/src/builder.ts",
+    "../../../packages/fluent-convex/src/index.ts",
+    "../../../packages/fluent-convex/src/middleware.ts",
+    "../../../packages/fluent-convex/src/types.ts",
+    "../../../packages/fluent-convex/src/zod_support.ts"
   ],
   "exclude": ["./_generated"]
 }

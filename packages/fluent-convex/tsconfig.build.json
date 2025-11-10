@@ -7,6 +7,10 @@
     "resolveJsonModule": true,
     "allowJs": true,
     "checkJs": false,
+    "outDir": "./dist",
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
@@ -15,9 +19,7 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true
   },
-  "files": [],
-  "references": [
-    { "path": "./packages/fluent-convex" },
-    { "path": "./apps/example" }
-  ]
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.test-d.ts"]
 }
+

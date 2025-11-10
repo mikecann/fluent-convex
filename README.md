@@ -113,7 +113,7 @@ export const listNumbersWithZod = convex
 
 ## Example
 
-Check out the `/example` directory for a complete working example with various use cases including:
+Check out the `/apps/example` directory for a complete working example with various use cases including:
 
 - Simple queries and mutations
 - Middleware composition
@@ -123,10 +123,18 @@ Check out the `/example` directory for a complete working example with various u
 
 ## Development
 
-This is a monorepo structure:
+This is a monorepo using npm workspaces:
 
-- `/src` - The npm package source code
-- `/example` - Example Convex app using the package
+- `/packages/fluent-convex` - The npm package source code
+- `/apps/example` - Example Convex app using the package
+
+### Setup
+
+```bash
+npm install
+```
+
+This will install dependencies for all workspaces.
 
 ### Building the package
 
@@ -143,8 +151,7 @@ npm test
 ### Running the example
 
 ```bash
-cd example
-npm install
+cd apps/example
 npm run dev
 ```
 
