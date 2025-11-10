@@ -8,12 +8,15 @@ export default function App() {
       <header className="sticky top-0 z-10 bg-light dark:bg-dark p-4 border-b-2 border-slate-200 dark:border-slate-800">
         Fluent Convex - Testing Library Types
       </header>
-      <main className="p-8 flex flex-col gap-8">
-        <h1 className="text-4xl font-bold text-center">Fluent Convex</h1>
-        <NumbersList />
-        <NumberStats />
-        <FilteredNumbers />
-        <Actions />
+      <main className="p-8">
+        <h1 className="text-4xl font-bold text-center mb-8">Fluent Convex</h1>
+        <div className="flex flex-wrap gap-8 justify-center">
+          <NumbersList />
+          <NumberStats />
+          <FilteredNumbers />
+          <Actions />
+          <AuthTesting />
+        </div>
       </main>
     </>
   );
@@ -36,14 +39,14 @@ function NumbersList() {
 
   if (numbers === undefined) {
     return (
-      <div className="flex flex-col gap-4 p-4 bg-slate-100 dark:bg-slate-900 rounded-lg max-w-2xl mx-auto">
+      <div className="flex flex-col gap-4 p-4 bg-slate-100 dark:bg-slate-900 rounded-lg min-w-[400px] max-w-[500px]">
         <p className="text-center">Loading numbers...</p>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-4 p-4 bg-slate-100 dark:bg-slate-900 rounded-lg max-w-2xl mx-auto">
+    <div className="flex flex-col gap-4 p-4 bg-slate-100 dark:bg-slate-900 rounded-lg min-w-[400px] max-w-[500px]">
       <h2 className="text-2xl font-bold">Numbers List</h2>
       <p className="text-sm text-slate-600 dark:text-slate-400">
         Testing PropertyValidators and Zod validators
@@ -125,7 +128,7 @@ function NumberStats() {
   }
 
   return (
-    <div className="flex flex-col gap-4 p-4 bg-slate-100 dark:bg-slate-900 rounded-lg max-w-2xl mx-auto">
+    <div className="flex flex-col gap-4 p-4 bg-slate-100 dark:bg-slate-900 rounded-lg min-w-[400px] max-w-[500px]">
       <h2 className="text-2xl font-bold">Statistics</h2>
       <p className="text-sm text-slate-600 dark:text-slate-400">
         Testing Zod return validators with complex types
@@ -163,7 +166,7 @@ function FilteredNumbers() {
   }
 
   return (
-    <div className="flex flex-col gap-4 p-4 bg-slate-100 dark:bg-slate-900 rounded-lg max-w-2xl mx-auto">
+    <div className="flex flex-col gap-4 p-4 bg-slate-100 dark:bg-slate-900 rounded-lg min-w-[400px] max-w-[500px]">
       <h2 className="text-2xl font-bold">Filtered View</h2>
       <p className="text-sm text-slate-600 dark:text-slate-400">
         Testing Zod enum validators
@@ -206,7 +209,7 @@ function Actions() {
   const [isGenerating, setIsGenerating] = useState(false);
 
   return (
-    <div className="flex flex-col gap-4 p-4 bg-slate-100 dark:bg-slate-900 rounded-lg max-w-2xl mx-auto">
+    <div className="flex flex-col gap-4 p-4 bg-slate-100 dark:bg-slate-900 rounded-lg min-w-[400px] max-w-[500px]">
       <h2 className="text-2xl font-bold">Actions</h2>
       <p className="text-sm text-slate-600 dark:text-slate-400">
         Testing action functions
@@ -232,6 +235,120 @@ function Actions() {
         >
           {isGenerating ? "Generating..." : "Generate 5 Random Numbers"}
         </button>
+      </div>
+    </div>
+  );
+}
+
+function AuthTesting() {
+  // Testing auth-protected routes (should fail without authentication)
+  const addNumberAuth = useMutation(api.myFunctions.addNumberAuth);
+  const addNumberAuthAction = useAction(api.myFunctions.addNumberAuthAction);
+  const [mutationError, setMutationError] = useState<string | null>(null);
+  const [mutationSuccess, setMutationSuccess] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [actionSuccess, setActionSuccess] = useState<string | null>(null);
+
+  return (
+    <div className="flex flex-col gap-4 p-4 bg-slate-100 dark:bg-slate-900 rounded-lg min-w-[400px] max-w-[500px]">
+      <h2 className="text-2xl font-bold">Authentication Testing</h2>
+      <p className="text-sm text-slate-600 dark:text-slate-400">
+        Testing middleware authentication - these routes should fail with
+        "Unauthorized" errors when not authenticated
+      </p>
+
+      <div className="flex flex-col gap-4">
+        <div className="p-4 bg-white dark:bg-slate-800 rounded-md">
+          <h3 className="font-semibold mb-2">Mutation Test (addNumberAuth)</h3>
+          <div className="flex gap-2 flex-wrap mb-2">
+            <button
+              className="bg-orange-600 hover:bg-orange-700 text-white text-sm px-4 py-2 rounded-md"
+              onClick={() => {
+                setMutationError(null);
+                setMutationSuccess(null);
+                addNumberAuth({ value: Math.floor(Math.random() * 100) })
+                  .then((id) => {
+                    setMutationSuccess(
+                      `Success (unexpected): Added number with ID ${id}`,
+                    );
+                  })
+                  .catch((err) => {
+                    setMutationError(
+                      err.message || "Unauthorized (expected error)",
+                    );
+                  });
+              }}
+            >
+              Try Add Number (Auth Required)
+            </button>
+          </div>
+          {mutationSuccess && (
+            <div className="mt-2 p-2 bg-green-50 dark:bg-green-900/20 rounded text-sm">
+              <p className="text-green-800 dark:text-green-300 font-semibold">
+                ✓ {mutationSuccess}
+              </p>
+            </div>
+          )}
+          {mutationError && (
+            <div className="mt-2 p-2 bg-red-50 dark:bg-red-900/20 rounded text-sm">
+              <p className="text-red-800 dark:text-red-300 font-semibold">
+                ✗ Error (expected): {mutationError}
+              </p>
+            </div>
+          )}
+          {!mutationError && !mutationSuccess && (
+            <p className="text-sm text-slate-600 dark:text-slate-400">
+              Click the button above to test the auth-protected mutation
+            </p>
+          )}
+        </div>
+
+        <div className="p-4 bg-white dark:bg-slate-800 rounded-md">
+          <h3 className="font-semibold mb-2">
+            Action Test (addNumberAuthAction)
+          </h3>
+          <div className="flex gap-2 flex-wrap mb-2">
+            <button
+              className="bg-orange-600 hover:bg-orange-700 text-white text-sm px-4 py-2 rounded-md"
+              onClick={() => {
+                setActionError(null);
+                setActionSuccess(null);
+                addNumberAuthAction({ value: Math.floor(Math.random() * 100) })
+                  .then((result) => {
+                    setActionSuccess(
+                      `Success (unexpected): Added ${result.value} as user ${result.user}, ID: ${result.id}`,
+                    );
+                  })
+                  .catch((err) => {
+                    setActionError(
+                      err.message || "Unauthorized (expected error)",
+                    );
+                  });
+              }}
+            >
+              Try Add Number via Action (Auth Required)
+            </button>
+          </div>
+          {actionSuccess && (
+            <div className="mt-2 p-2 bg-green-50 dark:bg-green-900/20 rounded text-sm">
+              <p className="text-green-800 dark:text-green-300 font-semibold">
+                ✓ {actionSuccess}
+              </p>
+            </div>
+          )}
+          {actionError && (
+            <div className="mt-2 p-2 bg-red-50 dark:bg-red-900/20 rounded text-sm">
+              <p className="text-red-800 dark:text-red-300 font-semibold">
+                ✗ Error (expected): {actionError}
+              </p>
+            </div>
+          )}
+          {!actionError && !actionSuccess && (
+            <p className="text-sm text-slate-600 dark:text-slate-400">
+              Click the button above to test the auth-protected action
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );

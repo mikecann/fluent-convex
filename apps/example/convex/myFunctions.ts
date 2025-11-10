@@ -2,8 +2,8 @@ import { v } from "convex/values";
 import { z } from "zod";
 import { createBuilder } from "fluent-convex";
 import schema from "./schema";
-
-const convex = createBuilder(schema);
+import { convex } from "./lib";
+import { authMiddleware } from "./middleware";
 
 // Example: Simple query without middleware
 export const listNumbersSimple = convex
@@ -55,24 +55,6 @@ export const listNumbersSimpleWithZod = convex
       numbers: numbers.reverse().map((number) => number.value),
     };
   });
-
-// A middleware that checks if the user is authenticated
-const authMiddleware = convex.query().middleware(async ({ context, next }) => {
-  const identity = await context.auth.getUserIdentity();
-  if (!identity) {
-    throw new Error("Unauthorized");
-  }
-
-  return next({
-    context: {
-      ...context,
-      user: {
-        id: identity.subject,
-        name: identity.name ?? "Unknown",
-      },
-    },
-  });
-});
 
 // A query that requires authentication
 export const listNumbersAuth = convex
@@ -249,6 +231,29 @@ export const addRandomNumber = convex
     // In a real app, you'd import from api after generation
     const id = await context.runMutation(addNumber as any, { value });
     return { value, id };
+  });
+
+export const addNumberAuthAction = convex
+  .action()
+  .use(authMiddleware)
+  .input({ value: v.number() })
+  .returns(
+    v.object({
+      value: v.number(),
+      id: v.string(),
+      user: v.string(),
+    }),
+  )
+  .handler(async ({ context, input }) => {
+    // Actions can't directly access db, so we'll call the mutation
+    const id = await context.runMutation(addNumber as any, {
+      value: input.value,
+    });
+    return {
+      value: input.value,
+      id,
+      user: context.user.name,
+    };
   });
 
 // Testing query with complex return type using Zod
