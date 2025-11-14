@@ -20,6 +20,14 @@
     "isolatedModules": true,
     "noEmit": true
   },
-  "include": ["./**/*"],
+  "include": [
+    "./**/*",
+    "../../../packages/fluent-convex/src/builder.test-d.ts",
+    "../../../packages/fluent-convex/src/builder.ts",
+    "../../../packages/fluent-convex/src/index.ts",
+    "../../../packages/fluent-convex/src/middleware.ts",
+    "../../../packages/fluent-convex/src/types.ts",
+    "../../../packages/fluent-convex/src/zod_support.ts"
+  ],
   "exclude": ["./_generated"]
 }
