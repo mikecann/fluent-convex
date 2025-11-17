@@ -105,6 +105,54 @@ describe("Middleware functionality", () => {
     const result = await t.query(api.myFunctions.quickQuery, { limit: 3 });
     expect(result).toBeInstanceOf(Array);
   });
+
+  test("should execute middleware added after handler", async () => {
+    const t = convexTest(schema, modules);
+    await t.mutation(api.myFunctions.addNumber, { value: 100 });
+    await t.mutation(api.myFunctions.addNumber, { value: 200 });
+
+    const result = await t.query(
+      api.myFunctions.queryWithPostHandlerMiddleware,
+      { count: 5 },
+    );
+
+    expect(result.numbers).toBeInstanceOf(Array);
+    expect(result.requestId).toBeDefined();
+    expect(typeof result.requestId).toBe("string");
+    expect(result.requestId.startsWith("req-")).toBe(true);
+  });
+
+  test("should execute multiple middleware added after handler in order", async () => {
+    const t = convexTest(schema, modules);
+    await t.mutation(api.myFunctions.addNumber, { value: 300 });
+
+    const result = await t.query(
+      api.myFunctions.queryWithMultiplePostHandlerMiddleware,
+      { count: 5 },
+    );
+
+    expect(result.numbers).toBeInstanceOf(Array);
+    expect(result.requestId).toBeDefined();
+    expect(result.timestamp).toBeDefined();
+    expect(typeof result.requestId).toBe("string");
+    expect(typeof result.timestamp).toBe("number");
+    expect(result.requestId.startsWith("req-")).toBe(true);
+  });
+
+  test("should execute middleware after handler for mutations", async () => {
+    const t = convexTest(schema, modules);
+
+    const result = await t.mutation(
+      api.myFunctions.mutationWithPostHandlerMiddleware,
+      { value: 400 },
+    );
+
+    expect(result.id).toBeDefined();
+    expect(typeof result.id).toBe("string");
+    expect(result.requestId).toBeDefined();
+    expect(typeof result.requestId).toBe("string");
+    expect(result.requestId.startsWith("mut-")).toBe(true);
+  });
 });
 
 describe("Internal functions", () => {

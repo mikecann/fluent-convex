@@ -334,6 +334,103 @@ describe("Visibility and function types", () => {
   });
 });
 
+describe("Middleware after handler", () => {
+  it("should allow middleware to be added after handler", () => {
+    const middleware = convex.query().middleware(async ({ context, next }) => {
+      return next({
+        context: {
+          ...context,
+          requestId: "test-123",
+        },
+      });
+    });
+
+    convex
+      .query()
+      .input({ count: v.number() })
+      .handler(async ({ context, input }) => {
+        // Handler can access context that will be transformed by middleware added after
+        expectTypeOf(context.db).not.toBeAny();
+        return { count: input.count };
+      })
+      .use(middleware)
+      .public();
+  });
+
+  it("should allow multiple middleware to be added after handler", () => {
+    const middleware1 = convex.query().middleware(async ({ context, next }) => {
+      return next({
+        context: {
+          ...context,
+          requestId: "test-123",
+        },
+      });
+    });
+
+    const middleware2 = convex.query().middleware(async ({ context, next }) => {
+      return next({
+        context: {
+          ...context,
+          timestamp: Date.now(),
+        },
+      });
+    });
+
+    convex
+      .query()
+      .input({ count: v.number() })
+      .handler(async ({ context, input }) => {
+        expectTypeOf(context.db).not.toBeAny();
+        return { count: input.count };
+      })
+      .use(middleware1)
+      .use(middleware2)
+      .public();
+  });
+
+  it("should allow middleware after handler for mutations", () => {
+    const middleware = convex.mutation().middleware(async ({ context, next }) => {
+      return next({
+        context: {
+          ...context,
+          requestId: "mut-123",
+        },
+      });
+    });
+
+    convex
+      .mutation()
+      .input({ value: v.number() })
+      .handler(async ({ context, input }) => {
+        expectTypeOf(context.db).not.toBeAny();
+        return { value: input.value };
+      })
+      .use(middleware)
+      .public();
+  });
+
+  it("should allow middleware after handler for actions", () => {
+    const middleware = convex.action().middleware(async ({ context, next }) => {
+      return next({
+        context: {
+          ...context,
+          requestId: "act-123",
+        },
+      });
+    });
+
+    convex
+      .action()
+      .input({ url: v.string() })
+      .handler(async ({ context, input }) => {
+        expectTypeOf(context.auth).not.toBeAny();
+        return { url: input.url };
+      })
+      .use(middleware)
+      .public();
+  });
+});
+
 describe("Type safety edge cases", () => {
   it("should catch wrong input types with PropertyValidators", () => {
     convex

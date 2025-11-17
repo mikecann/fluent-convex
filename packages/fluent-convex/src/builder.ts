@@ -49,10 +49,10 @@ interface ConvexBuilderDef<
   argsValidator?: TArgsValidator;
   returnsValidator?: TReturnsValidator;
   visibility: TVisibility;
-  handler?: (options: {
-    context: Context;
-    input: any;
-  }) => Promise<any>;
+  handler?: (
+    context: Context,
+    input: any
+  ) => Promise<any>;
 }
 
 export class ConvexBuilder<
@@ -328,25 +328,15 @@ export class ConvexBuilder<
     true,
     TReturn
   > {
-    const composedHandler = async (
-      baseCtx:
-        | QueryCtx<TDataModel>
-        | MutationCtx<TDataModel>
-        | ActionCtx<TDataModel>,
+    // Store the raw handler function - it will be composed with all middlewares
+    // (including those added after .handler()) when .public() or .internal() is called
+    // The handler signature matches what Convex expects: (ctx, args) => Promise<return>
+    const rawHandler = async (
+      transformedCtx: Context,
       baseArgs: InferredArgs<TArgsValidator>
     ) => {
-      let currentContext: Context = baseCtx;
-
-      for (const middleware of this.def.middlewares) {
-        const result = await middleware({
-          context: currentContext,
-          next: async (options) => ({ context: options.context }),
-        });
-        currentContext = result.context;
-      }
-
       return handlerFn({
-        context: currentContext as TCurrentContext,
+        context: transformedCtx as TCurrentContext,
         input: baseArgs,
       });
     };
@@ -363,7 +353,7 @@ export class ConvexBuilder<
       TReturn
     >({
       ...this.def,
-      handler: composedHandler as any,
+      handler: rawHandler as any,
     });
   }
 
@@ -397,6 +387,7 @@ export class ConvexBuilder<
       argsValidator,
       returnsValidator,
       handler,
+      middlewares,
     } = this.def;
 
     if (!functionType) {
@@ -411,10 +402,33 @@ export class ConvexBuilder<
       );
     }
 
+    // Compose the handler with all middlewares (including those added after .handler())
+    const composedHandler = async (
+      baseCtx:
+        | QueryCtx<TDataModel>
+        | MutationCtx<TDataModel>
+        | ActionCtx<TDataModel>,
+      baseArgs: any
+    ) => {
+      let currentContext: Context = baseCtx;
+
+      // Apply all middlewares in order
+      for (const middleware of middlewares) {
+        const result = await middleware({
+          context: currentContext,
+          next: async (options) => ({ context: options.context }),
+        });
+        currentContext = result.context;
+      }
+
+      // Call the raw handler with the transformed context
+      return handler(currentContext as any, baseArgs);
+    };
+
     const config = {
       args: argsValidator || {},
       ...(returnsValidator ? { returns: returnsValidator } : {}),
-      handler,
+      handler: composedHandler,
     } as any;
 
     const isPublic = visibility === "public";

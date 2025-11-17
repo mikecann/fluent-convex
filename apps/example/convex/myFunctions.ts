@@ -161,6 +161,85 @@ export const quickQuery = convex
   })
   .public();
 
+// Testing middleware added AFTER handler
+export const queryWithPostHandlerMiddleware = convex
+  .query()
+  .input({ count: v.number() })
+  .handler(async ({ context, input }) => {
+    // This middleware will be applied before this handler runs
+    const numbers = await context.db
+      .query("numbers")
+      .order("desc")
+      .take(input.count);
+    return {
+      numbers: numbers.map((n) => n.value),
+      // requestId will be available from middleware added after handler
+      requestId: (context as any).requestId,
+    };
+  })
+  .use(
+    convex.query().middleware(async ({ context, next }) => {
+      return next({
+        context: {
+          ...context,
+          requestId: `req-${Math.random().toString(36).substring(7)}`,
+        },
+      });
+    }),
+  )
+  .public();
+
+// Testing multiple middleware added after handler
+export const queryWithMultiplePostHandlerMiddleware = convex
+  .query()
+  .input({ count: v.number() })
+  .handler(async ({ context, input }) => {
+    const numbers = await context.db
+      .query("numbers")
+      .order("desc")
+      .take(input.count);
+    return {
+      numbers: numbers.map((n) => n.value),
+      requestId: (context as any).requestId,
+      timestamp: (context as any).timestamp,
+    };
+  })
+  .use(
+    convex.query().middleware(async ({ context, next }) => {
+      return next({
+        context: {
+          ...context,
+          requestId: `req-${Date.now()}`,
+        },
+      });
+    }),
+  )
+  .use(addTimestamp)
+  .public();
+
+// Testing mutation with middleware after handler
+export const mutationWithPostHandlerMiddleware = convex
+  .mutation()
+  .input({ value: v.number() })
+  .handler(async ({ context, input }) => {
+    const id = await context.db.insert("numbers", { value: input.value });
+    return {
+      id,
+      requestId: (context as any).requestId,
+    };
+  })
+  .use(
+    convex.mutation().middleware(async ({ context, next }) => {
+      return next({
+        context: {
+          ...context,
+          requestId: `mut-${Date.now()}`,
+        },
+      });
+    }),
+  )
+  .public();
+
 // Testing optional fields with PropertyValidators
 export const addNumberWithMetadata = convex
   .mutation()
