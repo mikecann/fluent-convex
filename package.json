@@ -12,7 +12,9 @@
     "dev": "npm run dev --workspace=packages/fluent-convex",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
-    "dev:test": "npm run dev:test --workspace=packages/fluent-convex"
+    "dev:test": "npm run dev:test --workspace=packages/fluent-convex",
+    "codegen": "npm run codegen --workspace=apps/example",
+    "check:all": "npm run build && npm run codegen && npm run typecheck && npm run test"
   },
   "devDependencies": {
     "prettier": "^3.5.3",
