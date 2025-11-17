@@ -33,3 +33,13 @@ export const addTimestamp = convex.middleware(async ({ context, next }) => {
     },
   });
 });
+
+export const addValueMiddleware = <TValue>(value: TValue) =>
+  convex.middleware(async ({ context, next }) => {
+    return next({
+      context: {
+        ...context,
+        value,
+      },
+    });
+  });
