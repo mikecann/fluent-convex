@@ -24,7 +24,6 @@ import type {
   MutationCtx,
   ActionCtx,
   EmptyObject,
-  MaybeDefaultContext,
 } from "./types";
 import {
   isZodSchema,
@@ -54,7 +53,97 @@ interface ConvexBuilderDef<
 
 export class ConvexBuilder<
   TDataModel extends GenericDataModel = GenericDataModel,
-  TFunctionType extends FunctionType | undefined = undefined,
+> {
+  private def: ConvexBuilderDef<undefined, undefined, undefined, "public">;
+
+  constructor(
+    def: ConvexBuilderDef<undefined, undefined, undefined, "public">
+  ) {
+    this.def = def;
+  }
+
+  query(): ConvexBuilderWithFunctionKind<
+    TDataModel,
+    "query",
+    QueryCtx<TDataModel>,
+    QueryCtx<TDataModel>
+  > {
+    return new ConvexBuilderWithFunctionKind<
+      TDataModel,
+      "query",
+      QueryCtx<TDataModel>,
+      QueryCtx<TDataModel>
+    >({
+      ...this.def,
+      functionType: "query",
+    });
+  }
+
+  mutation(): ConvexBuilderWithFunctionKind<
+    TDataModel,
+    "mutation",
+    MutationCtx<TDataModel>,
+    MutationCtx<TDataModel>
+  > {
+    return new ConvexBuilderWithFunctionKind<
+      TDataModel,
+      "mutation",
+      MutationCtx<TDataModel>,
+      MutationCtx<TDataModel>
+    >({
+      ...this.def,
+      functionType: "mutation",
+    });
+  }
+
+  action(): ConvexBuilderWithFunctionKind<
+    TDataModel,
+    "action",
+    ActionCtx<TDataModel>,
+    ActionCtx<TDataModel>
+  > {
+    return new ConvexBuilderWithFunctionKind<
+      TDataModel,
+      "action",
+      ActionCtx<TDataModel>,
+      ActionCtx<TDataModel>
+    >({
+      ...this.def,
+      functionType: "action",
+    });
+  }
+
+  $context<U extends Context>(): {
+    middleware<UOutContext extends Context>(
+      middleware: ConvexMiddleware<U, UOutContext>
+    ): ConvexMiddleware<U, UOutContext>;
+  } {
+    // Return an object that allows middleware creation with a specific context type
+    return {
+      middleware<UOutContext extends Context>(
+        middleware: ConvexMiddleware<U, UOutContext>
+      ): ConvexMiddleware<U, UOutContext> {
+        return middleware;
+      },
+    };
+  }
+
+  middleware<UOutContext extends Context>(
+    middleware: ConvexMiddleware<EmptyObject, UOutContext>
+  ): ConvexMiddleware<EmptyObject, UOutContext>;
+  middleware<UInContext extends Context, UOutContext extends Context>(
+    middleware: ConvexMiddleware<UInContext, UOutContext>
+  ): ConvexMiddleware<UInContext, UOutContext>;
+  middleware<UInContext extends Context, UOutContext extends Context>(
+    middleware: ConvexMiddleware<UInContext, UOutContext>
+  ): ConvexMiddleware<UInContext, UOutContext> {
+    return middleware;
+  }
+}
+
+export class ConvexBuilderWithFunctionKind<
+  TDataModel extends GenericDataModel = GenericDataModel,
+  TFunctionType extends FunctionType = FunctionType,
   TInitialContext extends Context = EmptyObject,
   TCurrentContext extends Context = EmptyObject,
   TArgsValidator extends ConvexArgsValidator | undefined = undefined,
@@ -63,7 +152,7 @@ export class ConvexBuilder<
   THasHandler extends boolean = false,
   THandlerReturn = any,
 > {
-  private def: ConvexBuilderDef<
+  protected def: ConvexBuilderDef<
     TFunctionType,
     TArgsValidator,
     TReturnsValidator,
@@ -81,7 +170,7 @@ export class ConvexBuilder<
     this.def = def;
   }
 
-  $context<U extends Context>(): ConvexBuilder<
+  $context<U extends Context>(): ConvexBuilderWithFunctionKind<
     TDataModel,
     TFunctionType,
     U & EmptyObject,
@@ -92,7 +181,7 @@ export class ConvexBuilder<
     THasHandler,
     THandlerReturn
   > {
-    return new ConvexBuilder<
+    return new ConvexBuilderWithFunctionKind<
       TDataModel,
       TFunctionType,
       U & EmptyObject,
@@ -122,7 +211,7 @@ export class ConvexBuilder<
 
   use<UOutContext extends Context>(
     middleware: ConvexMiddleware<TCurrentContext, UOutContext>
-  ): ConvexBuilder<
+  ): ConvexBuilderWithFunctionKind<
     TDataModel,
     TFunctionType,
     TInitialContext,
@@ -133,7 +222,7 @@ export class ConvexBuilder<
     THasHandler,
     THandlerReturn
   > {
-    return new ConvexBuilder<
+    return new ConvexBuilderWithFunctionKind<
       TDataModel,
       TFunctionType,
       TInitialContext,
@@ -149,102 +238,9 @@ export class ConvexBuilder<
     });
   }
 
-  query(): ConvexBuilder<
-    TDataModel,
-    "query",
-    TInitialContext extends EmptyObject
-      ? QueryCtx<TDataModel>
-      : TInitialContext,
-    TCurrentContext extends EmptyObject
-      ? QueryCtx<TDataModel>
-      : TCurrentContext,
-    TArgsValidator,
-    TReturnsValidator,
-    TVisibility,
-    THasHandler,
-    THandlerReturn
-  > {
-    return new ConvexBuilder<
-      TDataModel,
-      "query",
-      MaybeDefaultContext<TInitialContext, QueryCtx<TDataModel>>,
-      MaybeDefaultContext<TCurrentContext, QueryCtx<TDataModel>>,
-      TArgsValidator,
-      TReturnsValidator,
-      TVisibility,
-      THasHandler,
-      THandlerReturn
-    >({
-      ...this.def,
-      functionType: "query",
-    });
-  }
-
-  mutation(): ConvexBuilder<
-    TDataModel,
-    "mutation",
-    TInitialContext extends EmptyObject
-      ? MutationCtx<TDataModel>
-      : TInitialContext,
-    TCurrentContext extends EmptyObject
-      ? MutationCtx<TDataModel>
-      : TCurrentContext,
-    TArgsValidator,
-    TReturnsValidator,
-    TVisibility,
-    THasHandler,
-    THandlerReturn
-  > {
-    return new ConvexBuilder<
-      TDataModel,
-      "mutation",
-      MaybeDefaultContext<TInitialContext, MutationCtx<TDataModel>>,
-      MaybeDefaultContext<TCurrentContext, MutationCtx<TDataModel>>,
-      TArgsValidator,
-      TReturnsValidator,
-      TVisibility,
-      THasHandler,
-      THandlerReturn
-    >({
-      ...this.def,
-      functionType: "mutation",
-    });
-  }
-
-  action(): ConvexBuilder<
-    TDataModel,
-    "action",
-    TInitialContext extends EmptyObject
-      ? ActionCtx<TDataModel>
-      : TInitialContext,
-    TCurrentContext extends EmptyObject
-      ? ActionCtx<TDataModel>
-      : TCurrentContext,
-    TArgsValidator,
-    TReturnsValidator,
-    TVisibility,
-    THasHandler,
-    THandlerReturn
-  > {
-    return new ConvexBuilder<
-      TDataModel,
-      "action",
-      MaybeDefaultContext<TInitialContext, ActionCtx<TDataModel>>,
-      MaybeDefaultContext<TCurrentContext, ActionCtx<TDataModel>>,
-      TArgsValidator,
-      TReturnsValidator,
-      TVisibility,
-      THasHandler,
-      THandlerReturn
-    >({
-      ...this.def,
-      functionType: "action",
-    });
-  }
-
   input<UInput extends ValidatorInput>(
     validator: UInput
-  ): ConvexBuilder<
+  ): ConvexBuilderWithFunctionKind<
     TDataModel,
     TFunctionType,
     TInitialContext,
@@ -259,7 +255,7 @@ export class ConvexBuilder<
       ? (toConvexValidator(validator) as ToConvexArgsValidator<UInput>)
       : (validator as ToConvexArgsValidator<UInput>);
 
-    return new ConvexBuilder<
+    return new ConvexBuilderWithFunctionKind<
       TDataModel,
       TFunctionType,
       TInitialContext,
@@ -277,7 +273,7 @@ export class ConvexBuilder<
 
   returns<UReturns extends ReturnsValidatorInput>(
     validator: UReturns
-  ): ConvexBuilder<
+  ): ConvexBuilderWithFunctionKind<
     TDataModel,
     TFunctionType,
     TInitialContext,
@@ -292,7 +288,7 @@ export class ConvexBuilder<
       ? (toConvexValidator(validator) as ToConvexReturnsValidator<UReturns>)
       : (validator as ToConvexReturnsValidator<UReturns>);
 
-    return new ConvexBuilder<
+    return new ConvexBuilderWithFunctionKind<
       TDataModel,
       TFunctionType,
       TInitialContext,
@@ -551,17 +547,7 @@ export class ConvexBuilderWithHandler<
 
 export function createBuilder<TSchema extends SchemaDefinition<any, boolean>>(
   _schema: TSchema
-): ConvexBuilder<
-  DataModelFromSchemaDefinition<TSchema>,
-  undefined,
-  EmptyObject,
-  EmptyObject,
-  undefined,
-  undefined,
-  "public",
-  false,
-  any
-> {
+): ConvexBuilder<DataModelFromSchemaDefinition<TSchema>> {
   return new ConvexBuilder({
     middlewares: [],
     visibility: "public",

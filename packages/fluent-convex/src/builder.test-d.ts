@@ -651,18 +651,61 @@ describe("ConvexBuilder Type Tests", () => {
     });
   });
 
+  describe("function kind selection", () => {
+    it("should prevent calling .input() before selecting function kind", () => {
+      const builder = convex;
+
+      // @ts-expect-error - ConvexBuilder does not have an input method. Call .query(), .mutation(), or .action() first.
+      builder.input({ id: v.string() });
+    });
+
+    it("should prevent calling .handler() before selecting function kind", () => {
+      const builder = convex;
+
+      // @ts-expect-error - ConvexBuilder does not have a handler method. Call .query(), .mutation(), or .action() first.
+      builder.handler(async () => ({ success: true }));
+    });
+
+    it("should prevent calling .use() before selecting function kind", () => {
+      const builder = convex;
+      const authMiddleware = convex
+        .query()
+        .middleware(async ({ context, next }) => {
+          return next({ context });
+        });
+
+      // @ts-expect-error - ConvexBuilder does not have a use method. Call .query(), .mutation(), or .action() first.
+      builder.use(authMiddleware);
+    });
+
+    it("should allow .query() to be called first", () => {
+      const builder = convex.query();
+      assertType<typeof builder>(builder);
+    });
+
+    it("should allow .mutation() to be called first", () => {
+      const builder = convex.mutation();
+      assertType<typeof builder>(builder);
+    });
+
+    it("should allow .action() to be called first", () => {
+      const builder = convex.action();
+      assertType<typeof builder>(builder);
+    });
+  });
+
   describe("order of operations", () => {
     it("should prevent calling .public() before .handler()", () => {
       const builder = convex.query().input({ id: v.string() });
 
-      // @ts-expect-error - ConvexBuilder does not have a public method. Call .handler() first.
+      // @ts-expect-error - ConvexBuilderWithFunctionKind does not have a public method. Call .handler() first.
       builder.public();
     });
 
     it("should prevent calling .internal() before .handler()", () => {
       const builder = convex.mutation().input({ name: v.string() });
 
-      // @ts-expect-error - ConvexBuilder does not have an internal method. Call .handler() first.
+      // @ts-expect-error - ConvexBuilderWithFunctionKind does not have an internal method. Call .handler() first.
       builder.internal();
     });
 
