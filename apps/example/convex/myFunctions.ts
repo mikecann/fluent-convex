@@ -16,7 +16,8 @@ export const listNumbersSimple = convex
     return {
       numbers: numbers.reverse().map((number) => number.value),
     };
-  });
+  })
+  .public();
 
 // export const doSomethingWithNumbers = convex.query().input({ count: v.number() }).handler(async ({ context, input }) => {
 //   const { numbers } = await listNumbersSimple({ context, input });
@@ -37,7 +38,8 @@ export const listNumbersSimpleWithConvexValidators = convex
     return {
       numbers: numbers.reverse().map((number) => number.value),
     };
-  });
+  })
+  .public();
 
 export const listNumbersSimpleWithZod = convex
   .query()
@@ -52,7 +54,8 @@ export const listNumbersSimpleWithZod = convex
     return {
       numbers: numbers.reverse().map((number) => number.value),
     };
-  });
+  })
+  .public();
 
 // A query that requires authentication
 export const listNumbersAuth = convex
@@ -69,7 +72,8 @@ export const listNumbersAuth = convex
       viewer: context.user.name, // user is available from middleware!
       numbers: numbers.reverse().map((number) => number.value),
     };
-  });
+  })
+  .public();
 
 // Mutation with the same middleware
 export const addNumberAuth = convex
@@ -81,7 +85,8 @@ export const addNumberAuth = convex
     console.log(`User ${context.user.name} is adding ${input.value}`);
 
     return await context.db.insert("numbers", { value: input.value });
-  });
+  })
+  .public();
 
 export const addNumber = convex
   .mutation()
@@ -89,7 +94,8 @@ export const addNumber = convex
   .returns(v.id("numbers"))
   .handler(async ({ context, input }) => {
     return await context.db.insert("numbers", { value: input.value });
-  });
+  })
+  .public();
 
 export const addNumberWithOptional = convex
   .mutation()
@@ -100,7 +106,8 @@ export const addNumberWithOptional = convex
       `Adding ${input.value}${input.label ? ` with label "${input.label}"` : ""}`,
     );
     return await context.db.insert("numbers", { value: input.value });
-  });
+  })
+  .public();
 
 // Multiple middleware composition
 export const listNumbersWithTimestamp = convex
@@ -119,18 +126,19 @@ export const listNumbersWithTimestamp = convex
       timestamp: context.timestamp,
       numbers: numbers.map((n) => n.value),
     };
-  });
+  })
+  .public();
 
 // Internal query
 export const internalListAll = convex
   .query()
-  .internal()
   .input({})
   .handler(async ({ context }) => {
     const numbers = await context.db.query("numbers").collect();
 
     return numbers;
-  });
+  })
+  .internal();
 
 // You can also define middleware inline
 export const quickQuery = convex
@@ -150,7 +158,8 @@ export const quickQuery = convex
     console.log(`Request ${context.requestId}`);
     const numbers = await context.db.query("numbers").take(input.limit);
     return numbers;
-  });
+  })
+  .public();
 
 // Testing optional fields with PropertyValidators
 export const addNumberWithMetadata = convex
@@ -169,7 +178,8 @@ export const addNumberWithMetadata = convex
       console.log(`Tags: ${input.tags.join(", ")}`);
     }
     return await context.db.insert("numbers", { value: input.value });
-  });
+  })
+  .public();
 
 // Testing Zod with refinements and custom validation
 export const addPositiveNumber = convex
@@ -188,7 +198,8 @@ export const addPositiveNumber = convex
       );
     }
     return await context.db.insert("numbers", { value: input.value });
-  });
+  })
+  .public();
 
 // Testing actions (which can call other APIs)
 export const generateRandomNumbers = convex
@@ -207,7 +218,8 @@ export const generateRandomNumbers = convex
       );
     }
     return numbers;
-  });
+  })
+  .public();
 
 // Testing action with runQuery and runMutation
 export const addRandomNumber = convex
@@ -231,7 +243,8 @@ export const addRandomNumber = convex
     // In a real app, you'd import from api after generation
     const id = await context.runMutation(addNumber as any, { value });
     return { value, id };
-  });
+  })
+  .public();
 
 export const addNumberAuthAction = convex
   .action()
@@ -254,7 +267,8 @@ export const addNumberAuthAction = convex
       id,
       user: context.user.name,
     };
-  });
+  })
+  .public();
 
 // Testing query with complex return type using Zod
 export const getNumberStats = convex
@@ -290,7 +304,8 @@ export const getNumberStats = convex
       max,
       numbers: values.slice(0, 10), // Return up to 10 numbers
     };
-  });
+  })
+  .public();
 
 // Testing mutation that deletes
 export const deleteAllNumbers = convex
@@ -302,7 +317,8 @@ export const deleteAllNumbers = convex
       await context.db.delete(number._id);
     }
     return { deleted: allNumbers.length };
-  });
+  })
+  .public();
 
 // Testing query with union types using Zod
 export const filterNumbers = convex
@@ -332,4 +348,5 @@ export const filterNumbers = convex
       numbers: filtered.slice(0, input.limit),
       totalMatching: filtered.length,
     };
-  });
+  })
+  .public();

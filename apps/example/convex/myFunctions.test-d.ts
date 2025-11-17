@@ -27,7 +27,8 @@ describe("Schema-aware type tests", () => {
 
         // Verify that each number has a value property of type number
         expectTypeOf<SingleNumber["value"]>().toEqualTypeOf<number>();
-      });
+      })
+      .public();
   });
 
   it("should return proper array of values not GenericDocument", () => {
@@ -49,17 +50,21 @@ describe("Schema-aware type tests", () => {
         return {
           numbers: values,
         };
-      });
+      })
+      .public();
   });
 
   it("should have proper table names", () => {
-    convex.query().handler(async ({ context }) => {
-      // Should only accept valid table names from the schema
-      const numbersQuery = context.db.query("numbers");
+    convex
+      .query()
+      .handler(async ({ context }) => {
+        // Should only accept valid table names from the schema
+        const numbersQuery = context.db.query("numbers");
 
-      // @ts-expect-error "invalid_table" is not in the schema
-      const invalidQuery = context.db.query("invalid_table");
-    });
+        // @ts-expect-error "invalid_table" is not in the schema
+        const invalidQuery = context.db.query("invalid_table");
+      })
+      .public();
   });
 
   it("should properly type document inserts in mutations", () => {
@@ -78,7 +83,8 @@ describe("Schema-aware type tests", () => {
 
         // @ts-expect-error Extra field "invalid" not in schema
         await context.db.insert("numbers", { value: 42, invalid: "field" });
-      });
+      })
+      .public();
   });
 });
 
@@ -95,7 +101,8 @@ describe("Input type inference", () => {
         expectTypeOf(input.count).toEqualTypeOf<number>();
         expectTypeOf(input.name).toEqualTypeOf<string>();
         expectTypeOf(input.optional).toEqualTypeOf<boolean | undefined>();
-      });
+      })
+      .public();
   });
 
   it("should infer types from v.object()", () => {
@@ -110,7 +117,8 @@ describe("Input type inference", () => {
       .handler(async ({ input }) => {
         expectTypeOf(input.count).toEqualTypeOf<number>();
         expectTypeOf(input.tags).toEqualTypeOf<string[]>();
-      });
+      })
+      .public();
   });
 
   it("should infer types from Zod schemas", () => {
@@ -127,7 +135,8 @@ describe("Input type inference", () => {
         expectTypeOf(input.count).toEqualTypeOf<number>();
         expectTypeOf(input.email).toEqualTypeOf<string>();
         expectTypeOf(input.tags).toEqualTypeOf<string[]>();
-      });
+      })
+      .public();
   });
 
   it("should handle Zod optional fields", () => {
@@ -142,7 +151,8 @@ describe("Input type inference", () => {
       .handler(async ({ input }) => {
         expectTypeOf(input.required).toEqualTypeOf<number>();
         expectTypeOf(input.optional).toEqualTypeOf<string | undefined>();
-      });
+      })
+      .public();
   });
 
   it("should infer types from Zod refinements", () => {
@@ -151,7 +161,8 @@ describe("Input type inference", () => {
       .input(z.object({ count: z.number() }).refine((data) => data.count > 0))
       .handler(async ({ input }) => {
         expectTypeOf(input.count).toEqualTypeOf<number>();
-      });
+      })
+      .public();
   });
 });
 
@@ -164,7 +175,8 @@ describe("Return type inference", () => {
         const result = { result: input.count * 2 };
         expectTypeOf(result).toEqualTypeOf<{ result: number }>();
         return result;
-      });
+      })
+      .public();
   });
 
   it("should validate return types with Convex validators", () => {
@@ -182,7 +194,8 @@ describe("Return type inference", () => {
           numbers: [1, 2, 3],
           total: input.count,
         };
-      });
+      })
+      .public();
   });
 
   it("should validate return types with Zod schemas", () => {
@@ -200,7 +213,8 @@ describe("Return type inference", () => {
           numbers: [1, 2, 3],
           message: "success",
         };
-      });
+      })
+      .public();
   });
 
   it("should validate primitive return types with Zod", () => {
@@ -210,7 +224,8 @@ describe("Return type inference", () => {
       .returns(z.number())
       .handler(async ({ input }) => {
         return input.value * 2;
-      });
+      })
+      .public();
   });
 });
 
@@ -238,7 +253,8 @@ describe("Middleware context transformation", () => {
 
         // Original context should still be available
         expectTypeOf(context.db).not.toBeAny();
-      });
+      })
+      .public();
   });
 
   it("should compose multiple middleware", () => {
@@ -273,7 +289,8 @@ describe("Middleware context transformation", () => {
         expectTypeOf(context.userId).toEqualTypeOf<"user123">();
         expectTypeOf(context.timestamp).toEqualTypeOf<number>();
         expectTypeOf(context.db).not.toBeAny();
-      });
+      })
+      .public();
   });
 });
 
@@ -281,11 +298,11 @@ describe("Visibility and function types", () => {
   it("should create internal queries", () => {
     const internalQuery = convex
       .query()
-      .internal()
       .input({ count: v.number() })
       .handler(async ({ input }) => {
         return { count: input.count };
-      });
+      })
+      .internal();
 
     // Type should indicate it's internal
     expectTypeOf(internalQuery).not.toBeAny();
@@ -300,7 +317,8 @@ describe("Visibility and function types", () => {
         const id = await context.db.insert("numbers", { value: input.value });
         expectTypeOf(id).toMatchTypeOf<Id<"numbers">>();
         return id;
-      });
+      })
+      .public();
   });
 
   it("should create actions with proper types", () => {
@@ -311,7 +329,8 @@ describe("Visibility and function types", () => {
         const result = { fetched: input.url };
         expectTypeOf(result).toEqualTypeOf<{ fetched: string }>();
         return result;
-      });
+      })
+      .public();
   });
 });
 
@@ -325,7 +344,8 @@ describe("Type safety edge cases", () => {
 
         // @ts-expect-error count is a number, not a string
         const str: string = input.count;
-      });
+      })
+      .public();
   });
 
   it("should catch wrong input types with Zod", () => {
@@ -337,7 +357,8 @@ describe("Type safety edge cases", () => {
 
         // @ts-expect-error value is a number, not a string
         const str: string = input.value;
-      });
+      })
+      .public();
   });
 
   it("should handle empty input", () => {
@@ -346,7 +367,8 @@ describe("Type safety edge cases", () => {
       .input({})
       .handler(async ({ input }) => {
         expectTypeOf(input).toEqualTypeOf<Record<never, never>>();
-      });
+      })
+      .public();
   });
 
   it("should handle complex nested types", () => {
@@ -363,6 +385,7 @@ describe("Type safety edge cases", () => {
         expectTypeOf(input.user.name).toEqualTypeOf<string>();
         expectTypeOf(input.user.age).toEqualTypeOf<number>();
         expectTypeOf(input.user.tags).toEqualTypeOf<string[]>();
-      });
+      })
+      .public();
   });
 });

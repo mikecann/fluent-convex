@@ -21,7 +21,8 @@ describe("ConvexBuilder Type Tests", () => {
         .handler(async ({ input }) => {
           assertType<{ count: number }>(input);
           return { success: true };
-        });
+        })
+        .public();
     });
 
     it("should accept Convex v.object() validators", () => {
@@ -31,7 +32,8 @@ describe("ConvexBuilder Type Tests", () => {
         .handler(async ({ input }) => {
           assertType<{ count: number }>(input);
           return { success: true };
-        });
+        })
+        .public();
     });
 
     it("should accept Zod object schemas", () => {
@@ -41,7 +43,8 @@ describe("ConvexBuilder Type Tests", () => {
         .handler(async ({ input }) => {
           assertType<{ count: number }>(input);
           return { success: true };
-        });
+        })
+        .public();
     });
 
     it("should reject Zod primitive schemas (not objects)", () => {
@@ -61,7 +64,8 @@ describe("ConvexBuilder Type Tests", () => {
         .handler(async ({ input }) => {
           assertType<{ count: number }>(input);
           return { success: true };
-        });
+        })
+        .public();
     });
   });
 
@@ -73,7 +77,8 @@ describe("ConvexBuilder Type Tests", () => {
         .returns(v.object({ numbers: v.array(v.number()) }))
         .handler(async () => {
           return { numbers: [1, 2, 3] };
-        });
+        })
+        .public();
     });
 
     it("should accept Zod return validators", () => {
@@ -83,7 +88,8 @@ describe("ConvexBuilder Type Tests", () => {
         .returns(z.object({ numbers: z.array(z.number()) }))
         .handler(async () => {
           return { numbers: [1, 2, 3] };
-        });
+        })
+        .public();
     });
 
     it("should accept Zod primitive return types", () => {
@@ -93,7 +99,8 @@ describe("ConvexBuilder Type Tests", () => {
         .returns(z.number())
         .handler(async () => {
           return 42;
-        });
+        })
+        .public();
     });
   });
 
@@ -123,7 +130,8 @@ describe("ConvexBuilder Type Tests", () => {
           assertType(context.auth);
 
           return { userId: context.user.id };
-        });
+        })
+        .public();
     });
 
     it("should chain multiple middleware", () => {
@@ -160,7 +168,8 @@ describe("ConvexBuilder Type Tests", () => {
           assertType<string>(context.requestId);
 
           return { success: true };
-        });
+        })
+        .public();
     });
 
     it("should work with mutations", () => {
@@ -184,7 +193,8 @@ describe("ConvexBuilder Type Tests", () => {
           assertType(context.db);
           assertType<string>(input.name);
           return null;
-        });
+        })
+        .public();
     });
 
     it("should work with actions", () => {
@@ -207,7 +217,8 @@ describe("ConvexBuilder Type Tests", () => {
           assertType<string>(context.token);
           assertType<string>(input.url);
           return { success: true };
-        });
+        })
+        .public();
     });
 
     it("should respect middleware application order", () => {
@@ -239,7 +250,8 @@ describe("ConvexBuilder Type Tests", () => {
           assertType<string>(context.first);
           assertType<string>(context.second);
           return { success: true };
-        });
+        })
+        .public();
     });
   });
 
@@ -251,7 +263,8 @@ describe("ConvexBuilder Type Tests", () => {
         .handler(async ({ input }) => {
           assertType<string>(input.id);
           return { id: input.id };
-        });
+        })
+        .public();
     });
 
     it("should create mutations", () => {
@@ -261,7 +274,8 @@ describe("ConvexBuilder Type Tests", () => {
         .handler(async ({ input }) => {
           assertType<string>(input.name);
           return { name: input.name };
-        });
+        })
+        .public();
     });
 
     it("should create actions", () => {
@@ -271,41 +285,42 @@ describe("ConvexBuilder Type Tests", () => {
         .handler(async ({ input }) => {
           assertType<string>(input.url);
           return { url: input.url };
-        });
+        })
+        .public();
     });
 
     it("should create internal queries", () => {
       convex
         .query()
-        .internal()
         .input({ id: v.string() })
         .handler(async ({ input }) => {
           assertType<string>(input.id);
           return { id: input.id };
-        });
+        })
+        .internal();
     });
 
     it("should create internal mutations", () => {
       convex
         .mutation()
-        .internal()
         .input({ value: v.number() })
         .handler(async ({ context, input }) => {
           assertType(context.db);
           assertType<number>(input.value);
           return { value: input.value };
-        });
+        })
+        .internal();
     });
 
     it("should create internal actions", () => {
       convex
         .action()
-        .internal()
         .input({ url: v.string() })
         .handler(async ({ input }) => {
           assertType<string>(input.url);
           return { url: input.url };
-        });
+        })
+        .internal();
     });
   });
 
@@ -314,7 +329,7 @@ describe("ConvexBuilder Type Tests", () => {
       convex.query().handler(async ({ input }) => {
         assertType<Record<never, never>>(input);
         return { success: true };
-      });
+      }).public();
     });
 
     it("should infer optional fields as T | undefined", () => {
@@ -330,7 +345,8 @@ describe("ConvexBuilder Type Tests", () => {
           assertType<string | undefined>(input.name);
           assertType<number | undefined>(input.value);
           return null;
-        });
+        })
+        .public();
     });
 
     it("should handle many optional fields with complex types", () => {
@@ -357,7 +373,8 @@ describe("ConvexBuilder Type Tests", () => {
           assertType<string | null | undefined>(input.status);
           assertType<Array<{ x: number; y: number }> | undefined>(input.items);
           return null;
-        });
+        })
+        .public();
     });
 
     it("should allow all fields to be optional", () => {
@@ -373,7 +390,8 @@ describe("ConvexBuilder Type Tests", () => {
           assertType<number | undefined>(input.minValue);
           assertType<number | undefined>(input.maxValue);
           return [];
-        });
+        })
+        .public();
     });
 
     it("should make all properties required but allow undefined for optional fields", () => {
@@ -413,7 +431,8 @@ describe("ConvexBuilder Type Tests", () => {
           };
 
           return { id: input.id };
-        });
+        })
+        .public();
     });
 
     it("should work with Partial for truly optional calling patterns", () => {
@@ -448,7 +467,8 @@ describe("ConvexBuilder Type Tests", () => {
           };
 
           return null;
-        });
+        })
+        .public();
     });
 
     it("should allow empty object when all fields are optional", () => {
@@ -476,7 +496,8 @@ describe("ConvexBuilder Type Tests", () => {
           };
 
           return [];
-        });
+        })
+        .public();
     });
   });
 
@@ -499,7 +520,8 @@ describe("ConvexBuilder Type Tests", () => {
           assertType<string[]>(input.tags);
 
           return { success: true };
-        });
+        })
+        .public();
     });
 
     it("should handle optional fields", () => {
@@ -511,7 +533,8 @@ describe("ConvexBuilder Type Tests", () => {
           assertType<number | undefined>(input.age);
 
           return { success: true };
-        });
+        })
+        .public();
     });
 
     it("should handle v.union()", () => {
@@ -523,7 +546,8 @@ describe("ConvexBuilder Type Tests", () => {
         .handler(async ({ input }) => {
           assertType<string | number>(input.value);
           return { success: true };
-        });
+        })
+        .public();
     });
 
     it("should handle v.array()", () => {
@@ -535,7 +559,8 @@ describe("ConvexBuilder Type Tests", () => {
         .handler(async ({ input }) => {
           assertType<string[]>(input.tags);
           return { success: true };
-        });
+        })
+        .public();
     });
 
     it("should handle nested v.object()", () => {
@@ -550,7 +575,8 @@ describe("ConvexBuilder Type Tests", () => {
         .handler(async ({ input }) => {
           assertType<{ name: string; age: number }>(input.user);
           return { success: true };
-        });
+        })
+        .public();
     });
 
     it("should handle v.literal()", () => {
@@ -562,7 +588,8 @@ describe("ConvexBuilder Type Tests", () => {
         .handler(async ({ input }) => {
           assertType<"user">(input.kind);
           return { success: true };
-        });
+        })
+        .public();
     });
 
     it("should handle mix of optional and required fields", () => {
@@ -578,7 +605,8 @@ describe("ConvexBuilder Type Tests", () => {
           assertType<string | undefined>(input.optional);
           assertType<number | undefined>(input.defaulted);
           return { success: true };
-        });
+        })
+        .public();
     });
   });
 
@@ -591,7 +619,8 @@ describe("ConvexBuilder Type Tests", () => {
           assertType(context.db);
           assertType(context.auth);
           return { success: true };
-        });
+        })
+        .public();
     });
 
     it("mutations should have db and auth", () => {
@@ -602,7 +631,8 @@ describe("ConvexBuilder Type Tests", () => {
           assertType(context.db);
           assertType(context.auth);
           return { success: true };
-        });
+        })
+        .public();
     });
 
     it("actions should have auth and scheduler", () => {
@@ -613,31 +643,32 @@ describe("ConvexBuilder Type Tests", () => {
           assertType(context.auth);
           assertType(context.scheduler);
           return { success: true };
-        });
+        })
+        .public();
     });
   });
 
   describe("order of operations", () => {
-    it("should allow .internal() before function type", () => {
+    it("should require .public() or .internal() after .handler()", () => {
       convex
-        .internal()
         .query()
         .input({ id: v.string() })
         .handler(async ({ input }) => {
           assertType<string>(input.id);
           return { id: input.id };
-        });
+        })
+        .internal();
     });
 
-    it("should allow .internal() after function type", () => {
+    it("should allow .public() after .handler()", () => {
       convex
         .query()
-        .internal()
         .input({ id: v.string() })
         .handler(async ({ input }) => {
           assertType<string>(input.id);
           return { id: input.id };
-        });
+        })
+        .public();
     });
   });
 });

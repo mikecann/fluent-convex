@@ -49,6 +49,10 @@ interface ConvexBuilderDef<
   argsValidator?: TArgsValidator;
   returnsValidator?: TReturnsValidator;
   visibility: TVisibility;
+  handler?: (options: {
+    context: Context;
+    input: any;
+  }) => Promise<any>;
 }
 
 export class ConvexBuilder<
@@ -59,6 +63,8 @@ export class ConvexBuilder<
   TArgsValidator extends ConvexArgsValidator | undefined = undefined,
   TReturnsValidator extends ConvexReturnsValidator | undefined = undefined,
   TVisibility extends Visibility = "public",
+  THasHandler extends boolean = false,
+  THandlerReturn = any,
 > {
   private def: ConvexBuilderDef<
     TFunctionType,
@@ -85,7 +91,9 @@ export class ConvexBuilder<
     U,
     TArgsValidator,
     TReturnsValidator,
-    TVisibility
+    TVisibility,
+    THasHandler,
+    THandlerReturn
   > {
     return new ConvexBuilder<
       TDataModel,
@@ -94,7 +102,9 @@ export class ConvexBuilder<
       U,
       TArgsValidator,
       TReturnsValidator,
-      TVisibility
+      TVisibility,
+      THasHandler,
+      THandlerReturn
     >({
       ...this.def,
       middlewares: [],
@@ -122,7 +132,9 @@ export class ConvexBuilder<
     TCurrentContext & UOutContext,
     TArgsValidator,
     TReturnsValidator,
-    TVisibility
+    TVisibility,
+    THasHandler,
+    THandlerReturn
   > {
     return new ConvexBuilder<
       TDataModel,
@@ -131,7 +143,9 @@ export class ConvexBuilder<
       TCurrentContext & UOutContext,
       TArgsValidator,
       TReturnsValidator,
-      TVisibility
+      TVisibility,
+      THasHandler,
+      THandlerReturn
     >({
       ...this.def,
       middlewares: [...this.def.middlewares, middleware as AnyConvexMiddleware],
@@ -149,7 +163,9 @@ export class ConvexBuilder<
       : TCurrentContext,
     TArgsValidator,
     TReturnsValidator,
-    TVisibility
+    TVisibility,
+    THasHandler,
+    THandlerReturn
   > {
     return new ConvexBuilder<
       TDataModel,
@@ -158,7 +174,9 @@ export class ConvexBuilder<
       MaybeDefaultContext<TCurrentContext, QueryCtx<TDataModel>>,
       TArgsValidator,
       TReturnsValidator,
-      TVisibility
+      TVisibility,
+      THasHandler,
+      THandlerReturn
     >({
       ...this.def,
       functionType: "query",
@@ -176,7 +194,9 @@ export class ConvexBuilder<
       : TCurrentContext,
     TArgsValidator,
     TReturnsValidator,
-    TVisibility
+    TVisibility,
+    THasHandler,
+    THandlerReturn
   > {
     return new ConvexBuilder<
       TDataModel,
@@ -185,7 +205,9 @@ export class ConvexBuilder<
       MaybeDefaultContext<TCurrentContext, MutationCtx<TDataModel>>,
       TArgsValidator,
       TReturnsValidator,
-      TVisibility
+      TVisibility,
+      THasHandler,
+      THandlerReturn
     >({
       ...this.def,
       functionType: "mutation",
@@ -203,7 +225,9 @@ export class ConvexBuilder<
       : TCurrentContext,
     TArgsValidator,
     TReturnsValidator,
-    TVisibility
+    TVisibility,
+    THasHandler,
+    THandlerReturn
   > {
     return new ConvexBuilder<
       TDataModel,
@@ -212,35 +236,15 @@ export class ConvexBuilder<
       MaybeDefaultContext<TCurrentContext, ActionCtx<TDataModel>>,
       TArgsValidator,
       TReturnsValidator,
-      TVisibility
+      TVisibility,
+      THasHandler,
+      THandlerReturn
     >({
       ...this.def,
       functionType: "action",
     });
   }
 
-  internal(): ConvexBuilder<
-    TDataModel,
-    TFunctionType,
-    TInitialContext,
-    TCurrentContext,
-    TArgsValidator,
-    TReturnsValidator,
-    "internal"
-  > {
-    return new ConvexBuilder<
-      TDataModel,
-      TFunctionType,
-      TInitialContext,
-      TCurrentContext,
-      TArgsValidator,
-      TReturnsValidator,
-      "internal"
-    >({
-      ...this.def,
-      visibility: "internal",
-    });
-  }
 
   input<UInput extends ValidatorInput>(
     validator: UInput
@@ -251,7 +255,9 @@ export class ConvexBuilder<
     TCurrentContext,
     ToConvexArgsValidator<UInput>,
     TReturnsValidator,
-    TVisibility
+    TVisibility,
+    THasHandler,
+    THandlerReturn
   > {
     const convexValidator = isZodSchema(validator)
       ? (toConvexValidator(validator) as ToConvexArgsValidator<UInput>)
@@ -264,7 +270,9 @@ export class ConvexBuilder<
       TCurrentContext,
       ToConvexArgsValidator<UInput>,
       TReturnsValidator,
-      TVisibility
+      TVisibility,
+      THasHandler,
+      THandlerReturn
     >({
       ...this.def,
       argsValidator: convexValidator,
@@ -280,7 +288,9 @@ export class ConvexBuilder<
     TCurrentContext,
     TArgsValidator,
     ToConvexReturnsValidator<UReturns>,
-    TVisibility
+    TVisibility,
+    THasHandler,
+    THandlerReturn
   > {
     const convexValidator = isZodSchema(validator)
       ? (toConvexValidator(validator) as ToConvexReturnsValidator<UReturns>)
@@ -293,7 +303,9 @@ export class ConvexBuilder<
       TCurrentContext,
       TArgsValidator,
       ToConvexReturnsValidator<UReturns>,
-      TVisibility
+      TVisibility,
+      THasHandler,
+      THandlerReturn
     >({
       ...this.def,
       returnsValidator: convexValidator,
@@ -305,39 +317,17 @@ export class ConvexBuilder<
       context: TCurrentContext;
       input: InferredArgs<TArgsValidator>;
     }) => Promise<TReturn>
-  ): TFunctionType extends "query"
-    ? RegisteredQuery<
-        TVisibility,
-        InferredArgs<TArgsValidator>,
-        Promise<TReturn>
-      >
-    : TFunctionType extends "mutation"
-      ? RegisteredMutation<
-          TVisibility,
-          InferredArgs<TArgsValidator>,
-          Promise<TReturn>
-        >
-      : TFunctionType extends "action"
-        ? RegisteredAction<
-            TVisibility,
-            InferredArgs<TArgsValidator>,
-            Promise<TReturn>
-          >
-        : never {
-    const {
-      functionType,
-      middlewares,
-      argsValidator,
-      returnsValidator,
-      visibility,
-    } = this.def;
-
-    if (!functionType) {
-      throw new Error(
-        "Function type not set. Call .query(), .mutation(), or .action() first."
-      );
-    }
-
+  ): ConvexBuilder<
+    TDataModel,
+    TFunctionType,
+    TInitialContext,
+    TCurrentContext,
+    TArgsValidator,
+    TReturnsValidator,
+    TVisibility,
+    true,
+    TReturn
+  > {
     const composedHandler = async (
       baseCtx:
         | QueryCtx<TDataModel>
@@ -347,7 +337,7 @@ export class ConvexBuilder<
     ) => {
       let currentContext: Context = baseCtx;
 
-      for (const middleware of middlewares) {
+      for (const middleware of this.def.middlewares) {
         const result = await middleware({
           context: currentContext,
           next: async (options) => ({ context: options.context }),
@@ -361,10 +351,70 @@ export class ConvexBuilder<
       });
     };
 
+    return new ConvexBuilder<
+      TDataModel,
+      TFunctionType,
+      TInitialContext,
+      TCurrentContext,
+      TArgsValidator,
+      TReturnsValidator,
+      TVisibility,
+      true,
+      TReturn
+    >({
+      ...this.def,
+      handler: composedHandler as any,
+    });
+  }
+
+  public(): THasHandler extends true
+    ? TFunctionType extends "query"
+      ? RegisteredQuery<"public", InferredArgs<TArgsValidator>, Promise<THandlerReturn>>
+      : TFunctionType extends "mutation"
+        ? RegisteredMutation<"public", InferredArgs<TArgsValidator>, Promise<THandlerReturn>>
+        : TFunctionType extends "action"
+          ? RegisteredAction<"public", InferredArgs<TArgsValidator>, Promise<THandlerReturn>>
+          : never
+    : never {
+    return this._register("public") as any;
+  }
+
+  internal(): THasHandler extends true
+    ? TFunctionType extends "query"
+      ? RegisteredQuery<"internal", InferredArgs<TArgsValidator>, Promise<THandlerReturn>>
+      : TFunctionType extends "mutation"
+        ? RegisteredMutation<"internal", InferredArgs<TArgsValidator>, Promise<THandlerReturn>>
+        : TFunctionType extends "action"
+          ? RegisteredAction<"internal", InferredArgs<TArgsValidator>, Promise<THandlerReturn>>
+          : never
+    : never {
+    return this._register("internal") as any;
+  }
+
+  private _register(visibility: Visibility): any {
+    const {
+      functionType,
+      argsValidator,
+      returnsValidator,
+      handler,
+    } = this.def;
+
+    if (!functionType) {
+      throw new Error(
+        "Function type not set. Call .query(), .mutation(), or .action() first."
+      );
+    }
+
+    if (!handler) {
+      throw new Error(
+        "Handler not set. Call .handler() before .public() or .internal()."
+      );
+    }
+
     const config = {
       args: argsValidator || {},
       ...(returnsValidator ? { returns: returnsValidator } : {}),
-      handler: composedHandler,
+      handler,
     } as any;
 
     const isPublic = visibility === "public";
@@ -374,7 +424,7 @@ export class ConvexBuilder<
       action: isPublic ? actionGeneric : internalActionGeneric,
     }[functionType];
 
-    return registrationFn(config) as any;
+    return registrationFn(config);
   }
 }
 
@@ -387,7 +437,9 @@ export function createBuilder<TSchema extends SchemaDefinition<any, boolean>>(
   EmptyObject,
   undefined,
   undefined,
-  "public"
+  "public",
+  false,
+  any
 > {
   return new ConvexBuilder({
     middlewares: [],
