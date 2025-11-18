@@ -99,6 +99,64 @@ export const listNumbersWithZod = convex
   });
 ```
 
+## Flexible Method Ordering
+
+The builder API is flexible about method ordering, allowing you to structure your code in the way that makes the most sense for your use case.
+
+### Middleware After Handler
+
+You can add middleware **after** defining the handler, which is useful when you want to wrap existing handlers with additional functionality:
+
+```ts
+const authMiddleware = convex.query().middleware(async ({ context, next }) => {
+  const identity = await context.auth.getUserIdentity();
+  if (!identity) {
+    throw new Error("Unauthorized");
+  }
+  return next({ context: { ...context, userId: identity.subject } });
+});
+
+// Middleware can be added after the handler
+export const getNumbers = convex
+  .query()
+  .input({ count: v.number() })
+  .handler(async ({ context, input }) => {
+    return await context.db.query("numbers").take(input.count);
+  })
+  .use(authMiddleware) // ✅ Middleware added after handler
+  .public();
+```
+
+### Callable Builders (Testing)
+
+Before registering a function with `.public()` or `.internal()`, the builder is **callable**, making it easy to test your functions:
+
+```ts
+// Create a callable query (not yet registered)
+const testQuery = convex
+  .query()
+  .input({ count: v.number() })
+  .handler(async ({ input }) => {
+    return { doubled: input.count * 2 };
+  });
+
+// You can call it directly for testing
+const mockContext = {} as any;
+const result = await testQuery(mockContext)({ count: 5 });
+console.log(result); // { doubled: 10 }
+
+// Once registered, it's no longer callable
+export const doubleNumber = testQuery.public();
+// doubleNumber(mockContext)({ count: 5 }); // ❌ TypeScript error - not callable
+```
+
+### Method Ordering Rules
+
+- **`.returns()`** must be called **before** `.handler()`
+- **`.use()`** can be called **before or after** `.handler()`
+- **`.public()`** or **`.internal()`** must be called **after** `.handler()`
+- Functions are **callable** before registration, **non-callable** after registration
+
 ## API
 
 ### Methods
