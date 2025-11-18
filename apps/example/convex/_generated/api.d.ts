@@ -9,6 +9,7 @@
  */
 
 import type * as callableFunctions from "../callableFunctions.js";
+import type * as experimentalTypes from "../experimentalTypes.js";
 import type * as lib from "../lib.js";
 import type * as middleware from "../middleware.js";
 import type * as myFunctions from "../myFunctions.js";
@@ -21,6 +22,7 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   callableFunctions: typeof callableFunctions;
+  experimentalTypes: typeof experimentalTypes;
   lib: typeof lib;
   middleware: typeof middleware;
   myFunctions: typeof myFunctions;
