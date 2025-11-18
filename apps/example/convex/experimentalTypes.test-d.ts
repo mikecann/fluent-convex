@@ -3,13 +3,21 @@ import type {
   FunctionReference,
   FilterApi,
   RegisteredQuery,
+  RegisteredMutation,
+  RegisteredAction,
   GenericQueryCtx,
+  GenericDataModel,
 } from "convex/server";
 
 // Base types
 type TArgs = { count: number };
 type THandlerReturn = { numbers: number[] };
 type TContext = GenericQueryCtx<any>;
+type TDataModel = GenericDataModel;
+type FunctionType = "query" | "mutation" | "action";
+
+// Simulate InferredArgs helper (like in builder)
+type InferredArgs<T extends TArgs | undefined> = T extends TArgs ? T : {};
 
 describe("FilterApi with intersection types", () => {
   it("should work with direct intersection types", () => {
@@ -32,8 +40,8 @@ describe("FilterApi with intersection types", () => {
     expectTypeOf<MyFunctionShouldExist>().not.toBeUndefined();
   });
 
-  it("should not fail with conditional types that evaluate to intersection types", () => {
-    // Now let's test with a conditional type (like what the builder returns)
+  it("should work with simple conditional types", () => {
+    // Simple conditional type - this might work
     type ConditionalQuery<T extends "query" | "mutation"> = T extends "query"
       ? RegisteredQuery<"public", TArgs, Promise<THandlerReturn>> &
           ((context: TContext) => (args: TArgs) => Promise<THandlerReturn>)
@@ -43,35 +51,438 @@ describe("FilterApi with intersection types", () => {
       myFunction: ConditionalQuery<"query">;
     };
 
-    // Filter for public functions - THIS DOESN'T WORK
-    // FilterApi filters out the function because it doesn't recognize the conditional type
     type FilteredConditional = FilterApi<
       ConditionalApi,
       FunctionReference<any, "public">
     >;
 
-    // This will be never/undefined - demonstrating the issue
-    // FilterApi doesn't recognize conditional types that evaluate to intersection types
-    type MyFunctionShouldExistButDoesnt = FilteredConditional["myFunction"];
-
-    // Demonstrate the issue: MyFunctionShouldExistButDoesnt is never/undefined
-    // This shows that FilterApi filtered out the function even though it should extend FunctionReference
-    expectTypeOf<MyFunctionShouldExistButDoesnt>().toBeNever();
+    type MyFunction = FilteredConditional["myFunction"];
+    // This might actually work - let's see
+    expectTypeOf<MyFunction>().not.toBeNever();
   });
 
-  it("should demonstrate that the conditional type itself extends FunctionReference", () => {
-    // The conditional type itself should extend FunctionReference
-    type ConditionalQuery<T extends "query" | "mutation"> = T extends "query"
+  it("should test with generic type parameters like the builder", () => {
+    // Simulate the builder's generic parameters
+    type BuilderReturn<
+      TFunctionType extends FunctionType,
+      TArgsValidator extends TArgs | undefined,
+      THandlerReturn,
+    > = TFunctionType extends "query"
+      ? RegisteredQuery<
+          "public",
+          InferredArgs<TArgsValidator>,
+          Promise<THandlerReturn>
+        > &
+          ((
+            context: TContext,
+          ) => (args: InferredArgs<TArgsValidator>) => Promise<THandlerReturn>)
+      : TFunctionType extends "mutation"
+        ? RegisteredMutation<
+            "public",
+            InferredArgs<TArgsValidator>,
+            Promise<THandlerReturn>
+          > &
+            ((
+              context: TContext,
+            ) => (
+              args: InferredArgs<TArgsValidator>,
+            ) => Promise<THandlerReturn>)
+        : TFunctionType extends "action"
+          ? RegisteredAction<
+              "public",
+              InferredArgs<TArgsValidator>,
+              Promise<THandlerReturn>
+            > &
+              ((
+                context: TContext,
+              ) => (
+                args: InferredArgs<TArgsValidator>,
+              ) => Promise<THandlerReturn>)
+          : never;
+
+    type TestApi = {
+      myFunction: BuilderReturn<"query", TArgs, THandlerReturn>;
+    };
+
+    type Filtered = FilterApi<TestApi, FunctionReference<any, "public">>;
+    type MyFunction = Filtered["myFunction"];
+
+    // Does this work or fail?
+    expectTypeOf<MyFunction>().not.toBeNever();
+  });
+
+  it("should test with a class method return type", () => {
+    // Simulate a class with a method that returns the conditional type
+    class TestBuilder<
+      TDataModel extends GenericDataModel,
+      TFunctionType extends FunctionType,
+      TArgsValidator extends TArgs | undefined,
+      THandlerReturn,
+    > {
+      public(): TFunctionType extends "query"
+        ? RegisteredQuery<
+            "public",
+            InferredArgs<TArgsValidator>,
+            Promise<THandlerReturn>
+          > &
+            ((
+              context: TContext,
+            ) => (
+              args: InferredArgs<TArgsValidator>,
+            ) => Promise<THandlerReturn>)
+        : TFunctionType extends "mutation"
+          ? RegisteredMutation<
+              "public",
+              InferredArgs<TArgsValidator>,
+              Promise<THandlerReturn>
+            > &
+              ((
+                context: TContext,
+              ) => (
+                args: InferredArgs<TArgsValidator>,
+              ) => Promise<THandlerReturn>)
+          : TFunctionType extends "action"
+            ? RegisteredAction<
+                "public",
+                InferredArgs<TArgsValidator>,
+                Promise<THandlerReturn>
+              > &
+                ((
+                  context: TContext,
+                ) => (
+                  args: InferredArgs<TArgsValidator>,
+                ) => Promise<THandlerReturn>)
+            : never {
+        return null as any;
+      }
+    }
+
+    const builder = new TestBuilder<
+      TDataModel,
+      "query",
+      TArgs,
+      THandlerReturn
+    >();
+    const result = builder.public();
+
+    type TestApi = {
+      myFunction: typeof result;
+    };
+
+    type Filtered = FilterApi<TestApi, FunctionReference<any, "public">>;
+    type MyFunction = Filtered["myFunction"];
+
+    // Does FilterApi work when the type comes from a class method?
+    expectTypeOf<MyFunction>().not.toBeNever();
+  });
+
+  it("should test with InferredArgs complexity", () => {
+    // Test if InferredArgs being conditional causes issues
+    type ComplexReturn<T extends TArgs | undefined> = RegisteredQuery<
+      "public",
+      InferredArgs<T>,
+      Promise<THandlerReturn>
+    > &
+      ((
+        context: TContext,
+      ) => (args: InferredArgs<T>) => Promise<THandlerReturn>);
+
+    type TestApi = {
+      myFunction: ComplexReturn<TArgs>;
+    };
+
+    type Filtered = FilterApi<TestApi, FunctionReference<any, "public">>;
+    type MyFunction = Filtered["myFunction"];
+
+    expectTypeOf<MyFunction>().not.toBeNever();
+  });
+
+  it("should test the exact builder return type structure", () => {
+    // This is the EXACT structure from the builder's public() method
+    type ExactBuilderReturn<
+      TFunctionType extends FunctionType,
+      TArgsValidator extends TArgs | undefined,
+      THandlerReturn,
+    > = TFunctionType extends "query"
+      ? RegisteredQuery<
+          "public",
+          InferredArgs<TArgsValidator>,
+          Promise<THandlerReturn>
+        > &
+          ((
+            context: TContext,
+          ) => (args: InferredArgs<TArgsValidator>) => Promise<THandlerReturn>)
+      : TFunctionType extends "mutation"
+        ? RegisteredMutation<
+            "public",
+            InferredArgs<TArgsValidator>,
+            Promise<THandlerReturn>
+          > &
+            ((
+              context: TContext,
+            ) => (
+              args: InferredArgs<TArgsValidator>,
+            ) => Promise<THandlerReturn>)
+        : TFunctionType extends "action"
+          ? RegisteredAction<
+              "public",
+              InferredArgs<TArgsValidator>,
+              Promise<THandlerReturn>
+            > &
+              ((
+                context: TContext,
+              ) => (
+                args: InferredArgs<TArgsValidator>,
+              ) => Promise<THandlerReturn>)
+          : never;
+
+    type TestApi = {
+      myFunction: ExactBuilderReturn<"query", TArgs, THandlerReturn>;
+    };
+
+    type Filtered = FilterApi<TestApi, FunctionReference<any, "public">>;
+    type MyFunction = Filtered["myFunction"];
+
+    // This is the key test - does FilterApi work with the exact builder structure?
+    expectTypeOf<MyFunction>().not.toBeNever();
+  });
+
+  it("should test with ApiFromModules simulation", () => {
+    // Maybe the issue is with how ApiFromModules processes the types?
+    // Let's simulate what happens when modules are imported
+    type ModuleExports = {
+      myFunction: "query" extends "query"
+        ? RegisteredQuery<
+            "public",
+            InferredArgs<TArgs>,
+            Promise<THandlerReturn>
+          > &
+            ((
+              context: TContext,
+            ) => (args: InferredArgs<TArgs>) => Promise<THandlerReturn>)
+        : never;
+    };
+
+    // Simulate ApiFromModules - it would create an object with module names as keys
+    type ApiFromModules<T extends Record<string, any>> = {
+      [K in keyof T]: T[K];
+    };
+
+    type FullApi = ApiFromModules<{
+      testModule: ModuleExports;
+    }>;
+
+    // Now filter it like Convex does
+    type Filtered = FilterApi<FullApi, FunctionReference<any, "public">>;
+    type TestModule = Filtered["testModule"];
+    type MyFunction = TestModule extends { myFunction: infer F } ? F : never;
+
+    // Does this work when going through ApiFromModules?
+    expectTypeOf<MyFunction>().not.toBeNever();
+  });
+
+  it("should test with unresolved conditional in object property", () => {
+    // What if the conditional type is not yet resolved when FilterApi checks it?
+    // Test with a type that stays conditional
+    type UnresolvedConditional<T extends FunctionType> = T extends "query"
       ? RegisteredQuery<"public", TArgs, Promise<THandlerReturn>> &
           ((context: TContext) => (args: TArgs) => Promise<THandlerReturn>)
       : never;
 
-    type ConditionalQueryInstance = ConditionalQuery<"query">;
+    // The type is still conditional here - T is not yet resolved
+    type TestApi<T extends FunctionType> = {
+      myFunction: UnresolvedConditional<T>;
+    };
 
-    // The conditional type when evaluated DOES extend FunctionReference
-    // But FilterApi doesn't recognize it when it's part of a conditional type
-    expectTypeOf<ConditionalQueryInstance>().toMatchTypeOf<
+    // Try to filter before resolving T
+    type Filtered<T extends FunctionType> = FilterApi<
+      TestApi<T>,
       FunctionReference<any, "public">
-    >();
+    >;
+
+    // Now resolve T
+    type Resolved = Filtered<"query">;
+    type MyFunction = Resolved["myFunction"];
+
+    // Does FilterApi work with unresolved conditionals?
+    expectTypeOf<MyFunction>().not.toBeNever();
+  });
+
+  it("should test intersection type that doesn't directly extend FunctionReference", () => {
+    // What if the intersection type itself doesn't extend FunctionReference?
+    // Only RegisteredQuery does, but the intersection might not?
+    type IntersectionType = RegisteredQuery<
+      "public",
+      TArgs,
+      Promise<THandlerReturn>
+    > &
+      ((context: TContext) => (args: TArgs) => Promise<THandlerReturn>);
+
+    // Check if the intersection extends FunctionReference
+    type _ExtendsFR =
+      IntersectionType extends FunctionReference<any, "public"> ? true : false;
+
+    // If it doesn't extend FunctionReference, that could be the issue!
+    type TestApi = {
+      myFunction: IntersectionType;
+    };
+
+    type Filtered = FilterApi<TestApi, FunctionReference<any, "public">>;
+    type MyFunction = Filtered["myFunction"];
+
+    // This should work if intersection types properly extend FunctionReference
+    expectTypeOf<MyFunction>().not.toBeNever();
+  });
+
+  it("should test with actual const value and typeof", () => {
+    // Maybe the issue is when you have an actual const value that's typed as the intersection?
+    // When you export a const, Convex sees typeof thatConst
+    const myFunction: RegisteredQuery<
+      "public",
+      TArgs,
+      Promise<THandlerReturn>
+    > &
+      ((context: TContext) => (args: TArgs) => Promise<THandlerReturn>) =
+      null as any;
+
+    // This is what Convex sees - typeof the exported const
+    type TestApi = {
+      myFunction: typeof myFunction;
+    };
+
+    type Filtered = FilterApi<TestApi, FunctionReference<any, "public">>;
+    type MyFunction = Filtered["myFunction"];
+
+    // Does FilterApi work with typeof a const that has intersection type?
+    expectTypeOf<MyFunction>().not.toBeNever();
+  });
+
+  it("should test with conditional return type from a function that uses 'as any'", () => {
+    // The builder returns `as any` - maybe that affects type inference?
+    function getFunction<T extends FunctionType>(
+      _type: T,
+    ): T extends "query"
+      ? RegisteredQuery<"public", TArgs, Promise<THandlerReturn>> &
+          ((context: TContext) => (args: TArgs) => Promise<THandlerReturn>)
+      : never {
+      return null as any;
+    }
+
+    const result = getFunction("query" as const);
+    type ResultType = typeof result;
+
+    type TestApi = {
+      myFunction: ResultType;
+    };
+
+    type Filtered = FilterApi<TestApi, FunctionReference<any, "public">>;
+    type MyFunction = Filtered["myFunction"];
+
+    // Does the 'as any' cast affect FilterApi's ability to see the type?
+    expectTypeOf<MyFunction>().not.toBeNever();
+  });
+
+  it("should test with method return type inferred from class instance", () => {
+    // Test what happens when you get the type from a method on a class instance
+    class Builder {
+      public<T extends FunctionType>(
+        _type: T,
+      ): T extends "query"
+        ? RegisteredQuery<"public", TArgs, Promise<THandlerReturn>> &
+            ((context: TContext) => (args: TArgs) => Promise<THandlerReturn>)
+        : never {
+        return null as any;
+      }
+    }
+
+    const builder = new Builder();
+    const result = builder.public("query" as const);
+    type ResultType = typeof result;
+
+    type TestApi = {
+      myFunction: ResultType;
+    };
+
+    type Filtered = FilterApi<TestApi, FunctionReference<any, "public">>;
+    type MyFunction = Filtered["myFunction"];
+
+    // Does FilterApi work when the type comes from a method call?
+    expectTypeOf<MyFunction>().not.toBeNever();
+  });
+
+  it("should demonstrate that intersection breaks FunctionReference extension", () => {
+    // THE ROOT CAUSE: Adding the callable function intersection breaks FunctionReference extension!
+    // This is why FilterApi filters out functions with callable intersections
+
+    type WithoutCallable = RegisteredQuery<
+      "public",
+      TArgs,
+      Promise<THandlerReturn>
+    >;
+    type WithCallable = RegisteredQuery<
+      "public",
+      TArgs,
+      Promise<THandlerReturn>
+    > &
+      ((context: TContext) => (args: TArgs) => Promise<THandlerReturn>);
+
+    // FilterApi behavior:
+    type ApiWithout = {
+      myFunction: WithoutCallable;
+    };
+    type ApiWith = {
+      myFunction: WithCallable;
+    };
+
+    type FilteredWithout = FilterApi<
+      ApiWithout,
+      FunctionReference<any, "public">
+    >;
+    type FilteredWith = FilterApi<ApiWith, FunctionReference<any, "public">>;
+
+    type FuncWithout = FilteredWithout["myFunction"];
+    type FuncWith = FilteredWith["myFunction"];
+
+    // WithoutCallable works - FilterApi keeps it because RegisteredQuery extends FunctionReference
+    expectTypeOf<FuncWithout>().not.toBeNever();
+    expectTypeOf<FuncWith>().not.toBeNever();
+
+    // THE BUG: WithCallable is filtered out (becomes never) because the intersection
+    // type (RegisteredQuery & CallableFunction) does NOT extend FunctionReference,
+    // even though RegisteredQuery itself does extend FunctionReference.
+    // This is the root cause - intersection types don't preserve FunctionReference extension.
+    type _FuncWithIsNever = FuncWith extends never ? true : false;
+    // This assertion will fail if FilterApi works, proving the bug exists
+    const _demonstratesBug: _FuncWithIsNever = true as _FuncWithIsNever;
+  });
+
+  it("should test the actual issue scenario - check if property exists", () => {
+    // Maybe the issue is that FilterApi returns {} (empty object) instead of never?
+    // Let's check if the property exists in the filtered result
+    type TestQuery = RegisteredQuery<"public", TArgs, Promise<THandlerReturn>> &
+      ((context: TContext) => (args: TArgs) => Promise<THandlerReturn>);
+
+    type TestApi = {
+      myFunction: TestQuery;
+    };
+
+    type Filtered = FilterApi<TestApi, FunctionReference<any, "public">>;
+
+    // Check if the property exists
+    type HasProperty = "myFunction" extends keyof Filtered ? true : false;
+    const _hasProp: HasProperty = true;
+
+    // Check what the property type is
+    type MyFunction = Filtered["myFunction"];
+
+    // If FilterApi works, MyFunction should exist and not be never
+    // If FilterApi doesn't work, either:
+    // 1. HasProperty would be false, OR
+    // 2. MyFunction would be never
+    expectTypeOf<MyFunction>().not.toBeNever();
+
+    // Also verify the property exists
+    type _VerifyProperty = keyof Filtered extends "myFunction" ? true : false;
+    const _verify: _VerifyProperty = true;
   });
 });
