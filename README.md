@@ -20,6 +20,8 @@ npm install fluent-convex convex zod
 
 ## Quick Start
 
+**Important:** All functions must end with `.public()` or `.internal()` to be registered with Convex.
+
 ```ts
 import { createBuilder } from "fluent-convex";
 import { v } from "convex/values";
@@ -38,7 +40,8 @@ export const listNumbers = convex
       .take(input.count);
 
     return { numbers: numbers.map((n) => n.value) };
-  });
+  })
+  .public(); // ✅ Must end with .public() or .internal()
 
 // With middleware
 const authMiddleware = convex.query().middleware(async ({ context, next }) => {
@@ -72,7 +75,8 @@ export const listNumbersAuth = convex
       viewer: context.user.name, // user is available from middleware!
       numbers: numbers.map((n) => n.value),
     };
-  });
+  })
+  .public(); // ✅ Must end with .public() or .internal()
 ```
 
 ## Using Zod
@@ -96,7 +100,8 @@ export const listNumbersWithZod = convex
     const numbers = await context.db.query("numbers").take(input.count);
 
     return { numbers: numbers.map((n) => n.value) };
-  });
+  })
+  .public(); // ✅ Must end with .public() or .internal()
 ```
 
 ## Flexible Method Ordering
@@ -154,8 +159,9 @@ export const doubleNumber = testQuery.public();
 
 - **`.returns()`** must be called **before** `.handler()`
 - **`.use()`** can be called **before or after** `.handler()`
-- **`.public()`** or **`.internal()`** must be called **after** `.handler()`
+- **`.public()`** or **`.internal()`** must be called **after** `.handler()` and is **required** to register the function
 - Functions are **callable** before registration, **non-callable** after registration
+- **All exported functions must end with `.public()` or `.internal()`** - functions without registration will not be available in your Convex API
 
 ## API
 
@@ -164,7 +170,8 @@ export const doubleNumber = testQuery.public();
 - `.query()` - Define a Convex query
 - `.mutation()` - Define a Convex mutation
 - `.action()` - Define a Convex action
-- `.internal()` - Make the function internal (private)
+- `.public()` - Register the function as public (required to register)
+- `.internal()` - Register the function as internal/private (required to register)
 - `.input(validator)` - Set input validation (Convex or Zod)
 - `.returns(validator)` - Set return validation (Convex or Zod)
 - `.use(middleware)` - Apply middleware
