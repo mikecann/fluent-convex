@@ -62,3 +62,20 @@ test("classic convex and callable", () => {
   // @ts-expect-error the intersection type on someFunction isnt accepted
   expectTypeOf<FilteredApi["module1"]>().not.toBeNever();
 });
+
+test("can call into a non registered query", () => {
+  const nonRegisteredQuery = convex
+    .query()
+    .input({ count: v.number() })
+    .handler(async ({ context, input }) => {
+      return `the count is ${input.count}`;
+    });
+
+  // can call into it
+  nonRegisteredQuery({} as any)({ count: 1 });
+
+  const registeredQuery = nonRegisteredQuery.public();
+
+  // @ts-expect-error should not be callable
+  registeredQuery({} as any)({ count: 1 });
+});
