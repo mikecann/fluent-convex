@@ -3,6 +3,7 @@ import { NumberStats } from "./components/NumberStats";
 import { FilteredNumbers } from "./components/FilteredNumbers";
 import { Actions } from "./components/Actions";
 import { AuthTesting } from "./components/AuthTesting";
+import { CallableFunctions } from "./components/CallableFunctions";
 
 export default function App() {
   return (
@@ -18,6 +19,7 @@ export default function App() {
           <FilteredNumbers />
           <Actions />
           <AuthTesting />
+          <CallableFunctions />
         </div>
       </main>
     </>

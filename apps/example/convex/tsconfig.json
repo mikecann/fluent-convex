@@ -11,9 +11,11 @@
     "jsx": "react-jsx",
     "skipLibCheck": true,
     "allowSyntheticDefaultImports": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
 
     /* These compiler options are required by Convex */
-    "target": "ESNext",
+    "target": "ES2022",
     "lib": ["ES2021", "dom"],
     "forceConsistentCasingInFileNames": true,
     "module": "ESNext",
@@ -24,6 +26,7 @@
     "./**/*",
     "../../../packages/fluent-convex/src/builder.test-d.ts",
     "../../../packages/fluent-convex/src/builder.ts",
+    "../../../packages/fluent-convex/src/decorators.ts",
     "../../../packages/fluent-convex/src/index.ts",
     "../../../packages/fluent-convex/src/middleware.ts",
     "../../../packages/fluent-convex/src/types.ts",

@@ -24,3 +24,11 @@ export {
   type ValidatorInput,
   type ReturnsValidatorInput,
 } from "./zod_support";
+
+export {
+  input,
+  returns,
+  getMetadata,
+  makeCallableMethods,
+  makeCallable,
+} from "./decorators";

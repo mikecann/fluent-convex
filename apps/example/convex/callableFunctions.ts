@@ -2,13 +2,14 @@ import { v } from "convex/values";
 import { convex } from "./lib";
 import { addTimestamp, addValueMiddleware } from "./middleware";
 import { QueryCtx } from "./_generated/server";
+import { input, returns, makeCallableMethods } from "fluent-convex";
 
 class MyQueryModel {
   constructor(private context: QueryCtx) {}
 
   @input({ count: v.number() })
   @returns(v.array(v.number()))
-  async listNumbers({ count }) {
+  async listNumbers({ count }: { count: number }) {
     const numbers = await this.context.db
       .query("numbers")
       .order("desc")
@@ -18,10 +19,10 @@ class MyQueryModel {
   }
 
   @input({ count: v.number() })
-  @returns(v.string())
-  async countNumbers({ count }) {
-    const count = await this.listNumbers({ count: 100 });
-    return count;
+  @returns(v.number())
+  async countNumbers({ count }: { count: number }) {
+    const numbers = await this.listNumbers({ count });
+    return numbers.length;
   }
 }
 
@@ -33,13 +34,22 @@ export const getNumbersWithStats = convex
   .input({ count: v.number() })
   .use(addTimestamp)
   .handler(async ({ context, input }) => {
+    // Create a callable version of the model where all decorated methods are automatically validated
+    const model = makeCallableMethods(new MyQueryModel(context));
 
-    const numbers = await new MyQueryModel(context).listNumbers({ count: input.count });
-    const numbersCount = await new MyQueryModel(context).countNumbers({ count: input.count });
+    const numbers = await model.listNumbers({ count: input.count });
+    const numbersCount = await model.countNumbers({ count: input.count });
 
     return {
       numbers,
       numbersCount,
     };
   })
+  .public();
+
+export const getNumbersWithStatsFromModel = fromModel(
+  MyQueryModel,
+  "listNumbers",
+)
+  .use(addTimestamp)
   .public();
