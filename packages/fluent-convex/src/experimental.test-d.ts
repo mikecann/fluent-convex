@@ -59,7 +59,6 @@ test("classic convex and callable", () => {
 
   type FilteredApi = FilterApi<Api, FunctionReference<any, "public">>;
 
+  // @ts-expect-error the intersection type on someFunction isnt accepted
   expectTypeOf<FilteredApi["module1"]>().not.toBeNever();
 });
-
-
