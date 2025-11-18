@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import { z } from "zod";
 import { convex } from "./lib";
 import { addTimestamp, authMiddleware } from "./middleware";
+import { internal } from "./_generated/api";
 
 // Example: Simple query without middleware
 export const listNumbersSimple = convex
@@ -129,8 +130,7 @@ export const internalListAll = convex
   .input({})
   .handler(async ({ context }) => {
     const numbers = await context.db.query("numbers").collect();
-
-    return numbers;
+    return numbers.map((n) => n.value);
   })
   .internal();
 
@@ -420,6 +420,25 @@ export const filterNumbers = convex
       filter: input.filter,
       numbers: filtered.slice(0, input.limit),
       totalMatching: filtered.length,
+    };
+  })
+  .public();
+
+// Testing action that calls an internal query
+export const getAllNumbersViaInternalQuery = convex
+  .action()
+  .input({})
+  .handler(async ({ context }) => {
+    // Actions can call internal queries using context.runQuery with internal API
+    // In a real app, you'd import from internal after generation
+    const allNumbers: number[] = await context.runQuery(
+      internal.myFunctions.internalListAll,
+      {},
+    );
+
+    return {
+      count: allNumbers.length,
+      numbers: allNumbers,
     };
   })
   .public();
