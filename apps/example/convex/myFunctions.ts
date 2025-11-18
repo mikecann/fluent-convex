@@ -19,12 +19,6 @@ export const listNumbersSimple = convex
   })
   .public();
 
-// export const doSomethingWithNumbers = convex.query().input({ count: v.number() }).handler(async ({ context, input }) => {
-//   const { numbers } = await listNumbersSimple({ context, input });
-
-//   return numbers.map(n => String(n)).join(", ");
-// });
-
 export const listNumbersSimpleWithConvexValidators = convex
   .query()
   .input(v.object({ count: v.number() }))
