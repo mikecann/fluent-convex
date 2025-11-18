@@ -3,7 +3,7 @@ import { convex } from "./lib";
 import { addTimestamp, addValueMiddleware } from "./middleware";
 
 // Example: Simple query without middleware
-export const listNumbersSimple = convex
+export const listNumbersSimple3 = convex
   .query()
   .input({ count: v.number() })
   .use(addTimestamp)
