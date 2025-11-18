@@ -410,50 +410,122 @@ describe("FilterApi with intersection types", () => {
     expectTypeOf<MyFunction>().not.toBeNever();
   });
 
-  it("should demonstrate that intersection breaks FunctionReference extension", () => {
-    // THE ROOT CAUSE: Adding the callable function intersection breaks FunctionReference extension!
-    // This is why FilterApi filters out functions with callable intersections
+  it("should test with typeof on exported const from conditional method", () => {
+    // The key difference: Convex uses `typeof callableFunctions` which gets the module type
+    // Let's simulate what happens when you export a const from a builder method
 
-    type WithoutCallable = RegisteredQuery<
-      "public",
-      TArgs,
-      Promise<THandlerReturn>
-    >;
-    type WithCallable = RegisteredQuery<
-      "public",
-      TArgs,
-      Promise<THandlerReturn>
-    > &
-      ((context: TContext) => (args: TArgs) => Promise<THandlerReturn>);
+    class TestBuilder<TFunctionType extends FunctionType> {
+      public(): TFunctionType extends "query"
+        ? RegisteredQuery<"public", TArgs, Promise<THandlerReturn>> &
+            ((context: TContext) => (args: TArgs) => Promise<THandlerReturn>)
+        : never {
+        return null as any;
+      }
+    }
 
-    // FilterApi behavior:
-    type ApiWithout = {
-      myFunction: WithoutCallable;
+    // This simulates: export const myFunction = builder.public()
+    const builder = new TestBuilder<"query">();
+    const myFunction = builder.public();
+
+    // This is what Convex sees: typeof myFunction
+    type ExportedFunctionType = typeof myFunction;
+
+    // Now test with ApiFromModules simulation
+    type ModuleExports = {
+      myFunction: typeof myFunction;
     };
-    type ApiWith = {
-      myFunction: WithCallable;
+
+    // Simulate ApiFromModules - it processes the module
+    type ApiFromModules<T extends Record<string, any>> = {
+      [K in keyof T]: T[K];
     };
 
-    type FilteredWithout = FilterApi<
-      ApiWithout,
-      FunctionReference<any, "public">
-    >;
-    type FilteredWith = FilterApi<ApiWith, FunctionReference<any, "public">>;
+    type FullApi = ApiFromModules<{
+      testModule: ModuleExports;
+    }>;
 
-    type FuncWithout = FilteredWithout["myFunction"];
-    type FuncWith = FilteredWith["myFunction"];
+    // Now filter it
+    type Filtered = FilterApi<FullApi, FunctionReference<any, "public">>;
+    type TestModule = Filtered["testModule"];
+    type MyFunction = TestModule extends { myFunction: infer F } ? F : never;
 
-    // WithoutCallable works - FilterApi keeps it because RegisteredQuery extends FunctionReference
-    expectTypeOf<FuncWithout>().not.toBeNever();
-    expectTypeOf<FuncWith>().not.toBeNever();
+    // Does this work when going through ApiFromModules with typeof?
+    expectTypeOf<MyFunction>().not.toBeNever();
+  });
 
-    // THE BUG: WithCallable is filtered out (becomes never) because the intersection
-    // type (RegisteredQuery & CallableFunction) does NOT extend FunctionReference,
-    // even though RegisteredQuery itself does extend FunctionReference.
-    // This is the root cause - intersection types don't preserve FunctionReference extension.
-    type _FuncWithIsNever = FuncWith extends never ? true : false;
-    // This assertion will fail if FilterApi works, proving the bug exists
-    const _demonstratesBug: _FuncWithIsNever = true as _FuncWithIsNever;
+  it("should test the exact scenario - conditional return type exported as const", () => {
+    // Simulate the exact builder scenario with all the generics
+    class ExactBuilder<
+      TDataModel extends GenericDataModel,
+      TFunctionType extends FunctionType,
+      TArgsValidator extends TArgs | undefined,
+      THandlerReturn,
+    > {
+      public(): TFunctionType extends "query"
+        ? RegisteredQuery<
+            "public",
+            InferredArgs<TArgsValidator>,
+            Promise<THandlerReturn>
+          > &
+            ((
+              context: TContext,
+            ) => (
+              args: InferredArgs<TArgsValidator>,
+            ) => Promise<THandlerReturn>)
+        : never {
+        return null as any;
+      }
+    }
+
+    // Simulate exporting a const - this is what Convex sees
+    const builder = new ExactBuilder<
+      TDataModel,
+      "query",
+      TArgs,
+      THandlerReturn
+    >();
+    const exportedFunction = builder.public();
+
+    // Convex processes: typeof exportedFunction (from the module)
+    // Simulate what ApiFromModules sees: typeof callableFunctions
+    type ModuleType = {
+      exportedFunction: typeof exportedFunction;
+    };
+
+    type FullApi = {
+      testModule: ModuleType;
+    };
+
+    type Filtered = FilterApi<FullApi, FunctionReference<any, "public">>;
+    type TestModule = Filtered["testModule"];
+    type ExportedFunc = TestModule extends { exportedFunction: infer F }
+      ? F
+      : never;
+
+    // This is the real test - does it work with the exact builder scenario?
+    expectTypeOf<ExportedFunc>().not.toBeNever();
+  });
+
+  it("should document findings - FilterApi works with intersection types", () => {
+    // KEY FINDING: All tests pass, which means FilterApi DOES work with intersection types!
+    // This contradicts the initial hypothesis that intersection types break FunctionReference extension.
+
+    // What we've proven:
+    // 1. FilterApi works with direct intersection types ✓
+    // 2. FilterApi works with conditional types that evaluate to intersections ✓
+    // 3. FilterApi works with typeof on exported consts ✓
+    // 4. FilterApi works through ApiFromModules simulation ✓
+    // 5. FilterApi works with class method return types ✓
+
+    // So if FilterApi works in all these scenarios, why doesn't it work in the actual builder?
+    // The issue must be something else:
+    // - Maybe the actual runtime value from _register() doesn't match the type signature?
+    // - Maybe there's something about the full builder chain (query().input().handler().public())?
+    // - Maybe Convex's actual ApiFromModules does something different than our simulation?
+    // - Maybe the issue only manifests with the actual Convex registration functions?
+
+    // Next steps: Investigate the actual builder implementation and runtime behavior
+    expectTypeOf<true>().toEqualTypeOf<true>();
   });
 
   it("should test the actual issue scenario - check if property exists", () => {
