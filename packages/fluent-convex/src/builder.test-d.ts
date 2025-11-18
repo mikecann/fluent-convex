@@ -8,6 +8,7 @@ import {
   type RegisteredMutation,
 } from "convex/server";
 import { createBuilder } from "./builder";
+import { toFluent } from "./model";
 import { input, returns } from "./decorators";
 import type { QueryCtx, MutationCtx } from "./types";
 
@@ -1344,7 +1345,7 @@ describe("ConvexBuilder Type Tests", () => {
     });
   });
 
-  describe("fromModel functionality", () => {
+  describe("toFluent functionality", () => {
     // Test model class with decorated methods
     class TestQueryModel {
       constructor(private context: QueryCtx<any>) {}
@@ -1374,7 +1375,7 @@ describe("ConvexBuilder Type Tests", () => {
     }
 
     it("should create a query from a decorated model method", () => {
-      const query = convex.fromModel(TestQueryModel, "listNumbers").public();
+      const query = toFluent(TestQueryModel, "listNumbers").public(convex);
 
       assertType<
         RegisteredQuery<"public", { count: number }, Promise<number[]>>
@@ -1384,7 +1385,7 @@ describe("ConvexBuilder Type Tests", () => {
     it("should infer input type from @input decorator", () => {
       // The handler is set by default, so we can't test input inference this way
       // But the type should be inferred correctly
-      const query = convex.fromModel(TestQueryModel, "listNumbers").public();
+      const query = toFluent(TestQueryModel, "listNumbers").public(convex);
 
       assertType<
         RegisteredQuery<"public", { count: number }, Promise<number[]>>
@@ -1392,7 +1393,7 @@ describe("ConvexBuilder Type Tests", () => {
     });
 
     it("should infer return type from @returns decorator", () => {
-      const query = convex.fromModel(TestQueryModel, "listNumbers").public();
+      const query = toFluent(TestQueryModel, "listNumbers").public(convex);
 
       assertType<
         RegisteredQuery<"public", { count: number }, Promise<number[]>>
@@ -1411,10 +1412,9 @@ describe("ConvexBuilder Type Tests", () => {
           });
         });
 
-      const query = convex
-        .fromModel(TestQueryModel, "listNumbers")
+      const query = toFluent(TestQueryModel, "listNumbers")
         .use(authMiddleware)
-        .public();
+        .public(convex);
 
       assertType<
         RegisteredQuery<"public", { count: number }, Promise<number[]>>
@@ -1422,7 +1422,7 @@ describe("ConvexBuilder Type Tests", () => {
     });
 
     it("should work with methods that have complex return types", () => {
-      const query = convex.fromModel(TestQueryModel, "getNumber").public();
+      const query = toFluent(TestQueryModel, "getNumber").public(convex);
 
       assertType<
         RegisteredQuery<
@@ -1434,7 +1434,7 @@ describe("ConvexBuilder Type Tests", () => {
     });
 
     it("should allow .internal() visibility", () => {
-      const query = convex.fromModel(TestQueryModel, "listNumbers").internal();
+      const query = toFluent(TestQueryModel, "listNumbers").internal(convex);
 
       assertType<
         RegisteredQuery<"internal", { count: number }, Promise<number[]>>
@@ -1442,7 +1442,7 @@ describe("ConvexBuilder Type Tests", () => {
     });
 
     it("should allow calling .public() directly (handler is set by default)", () => {
-      const query = convex.fromModel(TestQueryModel, "listNumbers").public();
+      const query = toFluent(TestQueryModel, "listNumbers").public(convex);
 
       assertType<
         RegisteredQuery<"public", { count: number }, Promise<number[]>>
@@ -1459,7 +1459,7 @@ describe("ConvexBuilder Type Tests", () => {
         }
       }
 
-      const query = convex.fromModel(ModelWithoutReturns, "getName").public();
+      const query = toFluent(ModelWithoutReturns, "getName").public(convex);
 
       assertType<RegisteredQuery<"public", { name: string }, Promise<any>>>(
         query
@@ -1475,7 +1475,7 @@ describe("ConvexBuilder Type Tests", () => {
         }
       }
 
-      const query = convex.fromModel(ModelWithoutInput, "getDefault").public();
+      const query = toFluent(ModelWithoutInput, "getDefault").public(convex);
 
       assertType<RegisteredQuery<"public", Record<never, never>, Promise<any>>>(
         query

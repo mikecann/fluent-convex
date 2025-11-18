@@ -34,7 +34,6 @@ import {
   type ToConvexArgsValidator,
   type ToConvexReturnsValidator,
 } from "./zod_support";
-import { getMethodMetadataFromClass } from "./decorators";
 
 type InferredArgs<T extends ConvexArgsValidator | undefined> =
   T extends ConvexArgsValidator ? InferArgs<T> : EmptyObject;
@@ -146,68 +145,6 @@ export class ConvexBuilder<
     middleware: ConvexMiddleware<UInContext, UOutContext>
   ): ConvexMiddleware<UInContext, UOutContext> {
     return middleware;
-  }
-
-  /**
-   * Create a builder from a decorated model method
-   * Extracts input and returns validators from decorators
-   * Defaults to query function type
-   */
-  fromModel<
-    TModel extends new (context: QueryCtx<TDataModel>) => any,
-    TMethodName extends keyof InstanceType<TModel>,
-  >(
-    ModelClass: TModel,
-    methodName: TMethodName
-  ): ConvexBuilderWithHandler<
-    TDataModel,
-    "query",
-    QueryCtx<TDataModel>,
-    QueryCtx<TDataModel>,
-    any,
-    any,
-    "public",
-    any
-  > {
-    // Get metadata from the decorated method
-    const metadata = getMethodMetadataFromClass(
-      ModelClass,
-      methodName as string
-    );
-
-    // Set default handler that instantiates the model and calls the method
-    const defaultHandler = async (
-      context: QueryCtx<TDataModel>,
-      input: any
-    ) => {
-      const model = new ModelClass(context);
-      const method = (model as any)[methodName];
-      if (typeof method !== "function") {
-        throw new Error(
-          `Method '${String(methodName)}' is not a function on ${ModelClass.name}`
-        );
-      }
-      return await method.call(model, input);
-    };
-
-    // Return a builder that already has a handler set
-    return new ConvexBuilderWithHandler<
-      TDataModel,
-      "query",
-      QueryCtx<TDataModel>,
-      QueryCtx<TDataModel>,
-      typeof metadata.inputValidator,
-      typeof metadata.returnsValidator,
-      "public",
-      any
-    >({
-      functionType: "query",
-      middlewares: [],
-      argsValidator: metadata.inputValidator,
-      returnsValidator: metadata.returnsValidator,
-      visibility: "public",
-      handler: defaultHandler as any,
-    }) as any;
   }
 }
 

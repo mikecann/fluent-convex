@@ -2,13 +2,15 @@ import { v } from "convex/values";
 import { convex } from "./lib";
 import { addTimestamp, addValueMiddleware, authMiddleware } from "./middleware";
 import { QueryCtx } from "./_generated/server";
-import { input, returns, makeCallableMethods } from "fluent-convex";
+import {
+  input,
+  returns,
+  makeCallableMethods,
+  toFluent,
+  QueryModel,
+} from "fluent-convex";
 import { GenericQueryCtx } from "convex/server";
 import { DataModel } from "./_generated/dataModel.js";
-
-abstract class QueryModel<TDataModel extends DataModel> {
-  constructor(protected context: GenericQueryCtx<TDataModel>) {}
-}
 
 class MyQueryModel extends QueryModel<DataModel> {
   @input({ count: v.number() })
@@ -51,12 +53,6 @@ export const getNumbersWithStats = convex
   })
   .public();
 
-export const listNumbersFromModel = convex
-  .fromModel(MyQueryModel, "listNumbers")
+export const listNumbersFromModel = toFluent(MyQueryModel, "listNumbers")
   .use(addTimestamp)
-  .public();
-
-export const listNumbersFromModelProtected = convex
-  .fromModel(MyQueryModel, "listNumbers")
-  .use(authMiddleware)
-  .public();
+  .public(convex);
