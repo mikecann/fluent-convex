@@ -1,6 +1,6 @@
 {
   "name": "fluent-convex-monorepo",
-  "version": "0.7.0",
+  "version": "0.7.4",
   "private": true,
   "type": "module",
   "workspaces": [
