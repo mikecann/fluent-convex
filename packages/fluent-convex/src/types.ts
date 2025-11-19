@@ -6,6 +6,8 @@ import type {
   GenericDataModel,
 } from "convex/server";
 
+import type { AnyConvexMiddleware } from "./middleware";
+
 export type Context = object;
 
 export type ConvexArgsValidator = PropertyValidators | GenericValidator;
@@ -62,3 +64,38 @@ export type ActionCtx<DataModel extends GenericDataModel = GenericDataModel> =
 
 export type FunctionType = "query" | "mutation" | "action";
 export type Visibility = "public" | "internal";
+// Type for a callable ConvexBuilderWithHandler
+
+export type CallableBuilder<
+  TCurrentContext extends Context,
+  TArgsValidator extends ConvexArgsValidator | undefined,
+  THandlerReturn,
+> = {
+  (
+    context: TCurrentContext
+  ): (args: InferredArgs<TArgsValidator>) => Promise<THandlerReturn>;
+};
+export interface ConvexBuilderDef<
+  TFunctionType extends FunctionType | undefined,
+  TArgsValidator extends ConvexArgsValidator | undefined,
+  TReturnsValidator extends ConvexReturnsValidator | undefined,
+> {
+  functionType?: TFunctionType;
+  middlewares: readonly AnyConvexMiddleware[];
+  argsValidator?: TArgsValidator;
+  returnsValidator?: TReturnsValidator;
+  handler?: (context: Context, input: any) => Promise<any>;
+}
+export type InferHandlerReturn<
+  TReturnsValidator extends ConvexReturnsValidator | undefined,
+  TReturn,
+> = [TReturnsValidator] extends [ConvexReturnsValidator]
+  ? ExpectedReturnType<TReturnsValidator>
+  : TReturn;
+export type ExpectedReturnType<
+  TReturnsValidator extends ConvexReturnsValidator | undefined,
+> = TReturnsValidator extends ConvexReturnsValidator
+  ? InferReturns<TReturnsValidator>
+  : any;
+export type InferredArgs<T extends ConvexArgsValidator | undefined> =
+  T extends ConvexArgsValidator ? InferArgs<T> : EmptyObject;
