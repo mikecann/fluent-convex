@@ -5,6 +5,7 @@ import { createBuilder } from "fluent-convex";
 import { api, internal } from "./_generated/api";
 import schema from "./schema";
 import { modules } from "./test.setup";
+import type { DataModel } from "./_generated/dataModel";
 
 describe("Basic queries and mutations", () => {
   test("should add and list numbers with simple validators", async () => {
@@ -206,7 +207,7 @@ describe("Return type validation", () => {
 
 describe("Handler uniqueness enforcement", () => {
   test("should not have handler method after calling handler()", () => {
-    const testBuilder = createBuilder(schema);
+    const testBuilder = createBuilder<DataModel>();
 
     const builder = testBuilder
       .query()
@@ -219,7 +220,7 @@ describe("Handler uniqueness enforcement", () => {
   });
 
   test("should not have handler method after calling handler() on mutation", () => {
-    const testBuilder = createBuilder(schema);
+    const testBuilder = createBuilder<DataModel>();
 
     const builder = testBuilder
       .mutation()
@@ -231,7 +232,7 @@ describe("Handler uniqueness enforcement", () => {
   });
 
   test("should not have handler method after calling handler() on action", () => {
-    const testBuilder = createBuilder(schema);
+    const testBuilder = createBuilder<DataModel>();
 
     const builder = testBuilder
       .action()
@@ -243,7 +244,7 @@ describe("Handler uniqueness enforcement", () => {
   });
 
   test("should not have handler method even after middleware is added", () => {
-    const testBuilder = createBuilder(schema);
+    const testBuilder = createBuilder<DataModel>();
 
     const authMiddleware = testBuilder
       .query()

@@ -6,6 +6,7 @@ import {
   defineTable,
   type RegisteredQuery,
   type RegisteredMutation,
+  type DataModelFromSchemaDefinition,
 } from "convex/server";
 import { createBuilder } from "./builder";
 import { input, returns } from "./decorators";
@@ -17,7 +18,7 @@ const schema = defineSchema({
   }),
 });
 
-const convex = createBuilder(schema);
+const convex = createBuilder<DataModelFromSchemaDefinition<typeof schema>>();
 
 describe("ConvexBuilder Type Tests", () => {
   describe("input validation", () => {

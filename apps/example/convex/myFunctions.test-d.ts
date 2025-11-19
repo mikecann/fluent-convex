@@ -2,10 +2,9 @@ import { describe, it, assertType, expectTypeOf } from "vitest";
 import { createBuilder } from "fluent-convex";
 import { v } from "convex/values";
 import { z } from "zod";
-import schema from "./schema";
-import type { Doc, Id } from "./_generated/dataModel";
+import type { Doc, Id, DataModel } from "./_generated/dataModel";
 
-const convex = createBuilder(schema);
+const convex = createBuilder<DataModel>();
 
 describe("Schema-aware type tests", () => {
   it("should infer proper types from schema when querying numbers table", () => {

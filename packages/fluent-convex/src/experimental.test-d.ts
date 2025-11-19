@@ -11,6 +11,7 @@ import {
   GenericDataModel,
   ApiFromModules,
   queryGeneric,
+  type DataModelFromSchemaDefinition,
 } from "convex/server";
 import { createBuilder } from "./builder";
 
@@ -20,7 +21,7 @@ const schema = defineSchema({
   }),
 });
 
-const convex = createBuilder(schema);
+const convex = createBuilder<DataModelFromSchemaDefinition<typeof schema>>();
 
 // Base types
 type TArgs = { count: number };

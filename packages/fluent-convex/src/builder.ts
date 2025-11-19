@@ -9,8 +9,6 @@ import {
   actionGeneric,
   internalActionGeneric,
   type GenericDataModel,
-  type DataModelFromSchemaDefinition,
-  type SchemaDefinition,
 } from "convex/server";
 import type { ConvexMiddleware, AnyConvexMiddleware } from "./middleware";
 import type {
@@ -315,8 +313,8 @@ export class ConvexBuilderWithFunctionKind<
     TReturn extends [TReturnsValidator] extends [ConvexReturnsValidator]
       ? ExpectedReturnType<TReturnsValidator>
       : any = [TReturnsValidator] extends [ConvexReturnsValidator]
-        ? ExpectedReturnType<TReturnsValidator>
-        : any
+      ? ExpectedReturnType<TReturnsValidator>
+      : any,
   >(
     handlerFn: (options: {
       context: TCurrentContext;
@@ -363,7 +361,7 @@ export class ConvexBuilderWithFunctionKind<
     type InferredReturn = [TReturnsValidator] extends [ConvexReturnsValidator]
       ? ExpectedReturnType<TReturnsValidator>
       : TReturn;
-    
+
     return new ConvexBuilderWithHandler<
       TDataModel,
       TFunctionType,
@@ -614,10 +612,10 @@ export class ConvexBuilderWithHandler<
   }
 }
 
-export function createBuilder<TSchema extends SchemaDefinition<any, boolean>>(
-  _schema: TSchema
-): ConvexBuilder<DataModelFromSchemaDefinition<TSchema>> {
-  return new ConvexBuilder({
+export function createBuilder<
+  TDataModel extends GenericDataModel,
+>(): ConvexBuilder<TDataModel> {
+  return new ConvexBuilder<TDataModel>({
     middlewares: [],
     visibility: "public",
   });
