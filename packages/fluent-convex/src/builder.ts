@@ -42,6 +42,13 @@ type ExpectedReturnType<
   ? InferReturns<TReturnsValidator>
   : any;
 
+type InferHandlerReturn<
+  TReturnsValidator extends ConvexReturnsValidator | undefined,
+  TReturn,
+> = [TReturnsValidator] extends [ConvexReturnsValidator]
+  ? ExpectedReturnType<TReturnsValidator>
+  : TReturn;
+
 interface ConvexBuilderDef<
   TFunctionType extends FunctionType | undefined,
   TArgsValidator extends ConvexArgsValidator | undefined,
@@ -256,9 +263,9 @@ export class ConvexBuilderWithFunctionKind<
     THasHandler,
     THandlerReturn
   > {
-    const convexValidator = isZodSchema(validator)
-      ? (toConvexValidator(validator) as ToConvexArgsValidator<UInput>)
-      : (validator as ToConvexArgsValidator<UInput>);
+    const convexValidator = (
+      isZodSchema(validator) ? toConvexValidator(validator) : validator
+    ) as ToConvexArgsValidator<UInput>;
 
     return new ConvexBuilderWithFunctionKind<
       TDataModel,
@@ -289,9 +296,9 @@ export class ConvexBuilderWithFunctionKind<
     THasHandler,
     THandlerReturn
   > {
-    const convexValidator = isZodSchema(validator)
-      ? (toConvexValidator(validator) as ToConvexReturnsValidator<UReturns>)
-      : (validator as ToConvexReturnsValidator<UReturns>);
+    const convexValidator = (
+      isZodSchema(validator) ? toConvexValidator(validator) : validator
+    ) as ToConvexReturnsValidator<UReturns>;
 
     return new ConvexBuilderWithFunctionKind<
       TDataModel,
@@ -310,11 +317,10 @@ export class ConvexBuilderWithFunctionKind<
   }
 
   handler<
-    TReturn extends [TReturnsValidator] extends [ConvexReturnsValidator]
-      ? ExpectedReturnType<TReturnsValidator>
-      : any = [TReturnsValidator] extends [ConvexReturnsValidator]
-      ? ExpectedReturnType<TReturnsValidator>
-      : any,
+    TReturn extends InferHandlerReturn<
+      TReturnsValidator,
+      any
+    > = InferHandlerReturn<TReturnsValidator, any>,
   >(
     handlerFn: (options: {
       context: TCurrentContext;
@@ -328,16 +334,12 @@ export class ConvexBuilderWithFunctionKind<
     TArgsValidator,
     TReturnsValidator,
     TVisibility,
-    [TReturnsValidator] extends [ConvexReturnsValidator]
-      ? ExpectedReturnType<TReturnsValidator>
-      : TReturn
+    InferHandlerReturn<TReturnsValidator, TReturn>
   > &
     CallableBuilder<
       TCurrentContext,
       TArgsValidator,
-      [TReturnsValidator] extends [ConvexReturnsValidator]
-        ? ExpectedReturnType<TReturnsValidator>
-        : TReturn
+      InferHandlerReturn<TReturnsValidator, TReturn>
     > {
     if (this.def.handler) {
       throw new Error(
@@ -358,9 +360,7 @@ export class ConvexBuilderWithFunctionKind<
       });
     };
 
-    type InferredReturn = [TReturnsValidator] extends [ConvexReturnsValidator]
-      ? ExpectedReturnType<TReturnsValidator>
-      : TReturn;
+    type InferredReturn = InferHandlerReturn<TReturnsValidator, TReturn>;
 
     return new ConvexBuilderWithHandler<
       TDataModel,
@@ -445,20 +445,27 @@ export class ConvexBuilderWithHandler<
     }
 
     return async (args: InferredArgs<TArgsValidator>) => {
-      let currentContext: Context = context;
-
-      // Apply all middlewares in order
-      for (const middleware of middlewares) {
-        const result = await middleware({
-          context: currentContext,
-          next: async (options) => ({ context: options.context }),
-        });
-        currentContext = result.context;
-      }
-
-      // Call the raw handler with the transformed context
-      return handler(currentContext as any, args);
+      const transformedContext = await this._applyMiddlewares(
+        context,
+        middlewares
+      );
+      return handler(transformedContext as any, args);
     };
+  }
+
+  private async _applyMiddlewares(
+    initialContext: Context,
+    middlewares: readonly AnyConvexMiddleware[]
+  ): Promise<Context> {
+    let currentContext: Context = initialContext;
+    for (const middleware of middlewares) {
+      const result = await middleware({
+        context: currentContext,
+        next: async (options) => ({ context: options.context }),
+      });
+      currentContext = result.context;
+    }
+    return currentContext;
   }
 
   use<UOutContext extends Context>(
@@ -580,19 +587,11 @@ export class ConvexBuilderWithHandler<
         | ActionCtx<TDataModel>,
       baseArgs: any
     ) => {
-      let currentContext: Context = baseCtx;
-
-      // Apply all middlewares in order
-      for (const middleware of middlewares) {
-        const result = await middleware({
-          context: currentContext,
-          next: async (options) => ({ context: options.context }),
-        });
-        currentContext = result.context;
-      }
-
-      // Call the raw handler with the transformed context
-      return handler(currentContext as any, baseArgs);
+      const transformedContext = await this._applyMiddlewares(
+        baseCtx,
+        middlewares
+      );
+      return handler(transformedContext as any, baseArgs);
     };
 
     const config = {
