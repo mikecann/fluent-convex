@@ -1,7 +1,6 @@
 import type { GenericDataModel } from "convex/server";
 import { ConvexBuilderWithHandler } from "./ConvexBuilderWithHandler";
-import { InferredArgs } from "./types";
-import { ExpectedReturnType } from "./types";
+import { InferredArgs, InferredHandlerReturn } from "./types";
 import { ConvexBuilderDef } from "./types";
 import { CallableBuilder } from "./types";
 import type { ConvexMiddleware, AnyConvexMiddleware } from "./middleware";
@@ -143,11 +142,10 @@ export class ConvexBuilderWithFunctionKind<
   }
 
   handler<
-    TReturn extends [TReturnsValidator] extends [ConvexReturnsValidator]
-      ? ExpectedReturnType<TReturnsValidator>
-      : any = [TReturnsValidator] extends [ConvexReturnsValidator]
-      ? ExpectedReturnType<TReturnsValidator>
-      : any,
+    TReturn extends InferredHandlerReturn<
+      TReturnsValidator,
+      any
+    > = InferredHandlerReturn<TReturnsValidator, any>,
   >(
     handlerFn: (
       context: TCurrentContext,
@@ -159,16 +157,12 @@ export class ConvexBuilderWithFunctionKind<
     TCurrentContext,
     TArgsValidator,
     TReturnsValidator,
-    [TReturnsValidator] extends [ConvexReturnsValidator]
-      ? ExpectedReturnType<TReturnsValidator>
-      : TReturn
+    InferredHandlerReturn<TReturnsValidator, TReturn>
   > &
     CallableBuilder<
       TCurrentContext,
       TArgsValidator,
-      [TReturnsValidator] extends [ConvexReturnsValidator]
-        ? ExpectedReturnType<TReturnsValidator>
-        : TReturn
+      InferredHandlerReturn<TReturnsValidator, TReturn>
     > {
     if (this.def.handler) {
       throw new Error(
@@ -186,9 +180,7 @@ export class ConvexBuilderWithFunctionKind<
       return handlerFn(transformedCtx as TCurrentContext, baseArgs);
     };
 
-    type InferredReturn = [TReturnsValidator] extends [ConvexReturnsValidator]
-      ? ExpectedReturnType<TReturnsValidator>
-      : TReturn;
+    type InferredReturn = InferredHandlerReturn<TReturnsValidator, TReturn>;
 
     return new ConvexBuilderWithHandler<
       TDataModel,

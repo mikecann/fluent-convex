@@ -9,7 +9,6 @@ import {
   type DataModelFromSchemaDefinition,
 } from "convex/server";
 import { createBuilder } from "./builder";
-import { input, returns } from "./decorators";
 import type { QueryCtx, MutationCtx } from "./types";
 
 const schema = defineSchema({

@@ -74,9 +74,9 @@ export type CallableBuilder<
   ): (args: InferredArgs<TArgsValidator>) => Promise<THandlerReturn>;
 };
 export interface ConvexBuilderDef<
-  TFunctionType extends FunctionType | undefined,
-  TArgsValidator extends ConvexArgsValidator | undefined,
-  TReturnsValidator extends ConvexReturnsValidator | undefined,
+  TFunctionType extends FunctionType | undefined = undefined,
+  TArgsValidator extends ConvexArgsValidator | undefined = undefined,
+  TReturnsValidator extends ConvexReturnsValidator | undefined = undefined,
 > {
   functionType?: TFunctionType;
   middlewares: readonly AnyConvexMiddleware[];
@@ -89,5 +89,13 @@ export type ExpectedReturnType<
 > = TReturnsValidator extends ConvexReturnsValidator
   ? InferReturns<TReturnsValidator>
   : any;
+
+export type InferredHandlerReturn<
+  TReturnsValidator extends ConvexReturnsValidator | undefined,
+  TReturn,
+> = [TReturnsValidator] extends [ConvexReturnsValidator]
+  ? ExpectedReturnType<TReturnsValidator>
+  : TReturn;
+
 export type InferredArgs<T extends ConvexArgsValidator | undefined> =
   T extends ConvexArgsValidator ? InferArgs<T> : EmptyObject;

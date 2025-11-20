@@ -28,7 +28,7 @@ import type {
 
 export class ConvexBuilderWithHandler<
   TDataModel extends GenericDataModel = GenericDataModel,
-  TFunctionType extends FunctionType | undefined = undefined,
+  TFunctionType extends FunctionType = FunctionType,
   TCurrentContext extends Context = EmptyObject,
   TArgsValidator extends ConvexArgsValidator | undefined = undefined,
   TReturnsValidator extends ConvexReturnsValidator | undefined = undefined,
@@ -41,11 +41,7 @@ export class ConvexBuilderWithHandler<
   >;
 
   constructor(
-    def: ConvexBuilderDef<
-      TFunctionType,
-      TArgsValidator,
-      TReturnsValidator
-    >
+    def: ConvexBuilderDef<TFunctionType, TArgsValidator, TReturnsValidator>
   ) {
     this.def = def;
 
