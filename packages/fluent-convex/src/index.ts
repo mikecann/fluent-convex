@@ -1,4 +1,7 @@
 export { createBuilder } from "./builder";
+export { ConvexBuilder } from "./ConvexBuilder";
+export { ConvexBuilderWithFunctionKind } from "./ConvexBuilderWithFunctionKind";
+export { ConvexBuilderWithHandler } from "./ConvexBuilderWithHandler";
 
 export type {
   ConvexMiddleware,
@@ -16,7 +19,10 @@ export type {
   ActionCtx,
   FunctionType,
   Visibility,
+  EmptyObject,
 } from "./types";
+
+export type { GenericDataModel } from "convex/server";
 
 export {
   isZodSchema,

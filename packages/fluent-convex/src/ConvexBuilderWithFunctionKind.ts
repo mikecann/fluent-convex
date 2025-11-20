@@ -27,7 +27,7 @@ export class ConvexBuilderWithFunctionKind<
   TArgsValidator extends ConvexArgsValidator | undefined = undefined,
   TReturnsValidator extends ConvexReturnsValidator | undefined = undefined,
 > {
-  protected def: ConvexBuilderDef<
+  public def: ConvexBuilderDef<
     TFunctionType,
     TArgsValidator,
     TReturnsValidator
@@ -37,6 +37,10 @@ export class ConvexBuilderWithFunctionKind<
     def: ConvexBuilderDef<TFunctionType, TArgsValidator, TReturnsValidator>
   ) {
     this.def = def;
+  }
+
+  extend<TResult>(fn: (builder: this) => TResult): TResult {
+    return fn(this);
   }
 
   $context<U extends Context>(): ConvexBuilderWithFunctionKind<

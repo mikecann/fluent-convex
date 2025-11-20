@@ -8,6 +8,7 @@ A fluent API builder for Convex functions with middleware support, inspired by [
 - 🎯 **Type-safe** - Full TypeScript support with type inference
 - ✨ **Fluent API** - Chain methods for a clean, readable syntax
 - 🔌 **Zod integration** - Use Zod schemas alongside Convex validators
+- 🧩 **Extensible** - Extend the builder with your own custom methods
 - 🚀 **Works with Convex** - Built on top of Convex's function system
 
 ## Installation
@@ -102,6 +103,75 @@ export const listNumbersWithZod = convex
   .public(); // ✅ Must end with .public() or .internal()
 ```
 
+## Extensibility
+
+You can extend the builder with your own custom methods by subclassing `ConvexBuilderWithFunctionKind` and using the `.extend()` method. This is powerful for adding domain-specific logic or shortcuts to your builder.
+
+### 1. Define your Extended Builder
+
+Subclass `ConvexBuilderWithFunctionKind` and add your custom methods.
+
+```ts
+import { 
+  ConvexBuilderWithFunctionKind, 
+  type GenericDataModel, 
+  type FunctionType, 
+  type Context, 
+  type EmptyObject, 
+  type ConvexArgsValidator, 
+  type ConvexReturnsValidator 
+} from "fluent-convex";
+
+class MyExtendedBuilder<
+  TDataModel extends GenericDataModel = GenericDataModel,
+  TFunctionType extends FunctionType = FunctionType,
+  TCurrentContext extends Context = EmptyObject,
+  TArgsValidator extends ConvexArgsValidator | undefined = undefined,
+  TReturnsValidator extends ConvexReturnsValidator | undefined = undefined,
+> extends ConvexBuilderWithFunctionKind<
+  TDataModel,
+  TFunctionType,
+  TCurrentContext,
+  TArgsValidator,
+  TReturnsValidator
+> {
+  // Constructor boilerplate to inherit types
+  constructor(
+    builder: ConvexBuilderWithFunctionKind<
+      TDataModel,
+      TFunctionType,
+      TCurrentContext,
+      TArgsValidator,
+      TReturnsValidator
+    >
+  ) {
+    super(builder.def);
+  }
+
+  // Add your custom method
+  myCustomMethod(param: string) {
+    // You can modify the builder, add middleware, or set validators
+    console.log("Custom method called with:", param);
+    return this;
+  }
+}
+```
+
+### 2. Use `.extend()`
+
+Use `.extend()` to switch to your custom builder.
+
+```ts
+const myQuery = convex
+  .query()
+  .extend((builder) => new MyExtendedBuilder(builder))
+  .myCustomMethod("hello") // ✅ Now you can call your method
+  .input(v.object({}))
+  .handler(async (ctx) => {
+    return "success";
+  });
+```
+
 ## Flexible Method Ordering
 
 The builder API is flexible about method ordering, allowing you to structure your code in the way that makes the most sense for your use case.
@@ -175,6 +245,7 @@ export const doubleNumber = testQuery.public();
 - `.use(middleware)` - Apply middleware
 - `.middleware(fn)` - Create a middleware function
 - `.handler(fn)` - Define the function handler
+- `.extend(fn)` - Extend the builder with a custom class
 
 ## Example
 
@@ -185,6 +256,7 @@ Check out the `/apps/example` directory for a complete working example with vari
 - Zod integration
 - Internal functions
 - Type-safe context transformations
+- Custom builder extensions
 
 ## Development
 

@@ -34,7 +34,7 @@ export class ConvexBuilderWithHandler<
   TReturnsValidator extends ConvexReturnsValidator | undefined = undefined,
   THandlerReturn = any,
 > {
-  private def: ConvexBuilderDef<
+  public def: ConvexBuilderDef<
     TFunctionType,
     TArgsValidator,
     TReturnsValidator
@@ -45,12 +45,33 @@ export class ConvexBuilderWithHandler<
   ) {
     this.def = def;
 
-    // Make the instance callable by returning a Proxy
-    return new Proxy(this, {
-      apply: (_target, _thisArg, args: [TCurrentContext]) => {
-        return this._call(args[0]);
-      },
+    // Create a callable function that delegates to _call
+    const callable = ((context: TCurrentContext) => {
+      return this._call(context);
     }) as any;
+
+    // Copy properties from prototype to the callable function
+    // This is a bit of a hack to make the function behave like an instance of the class
+    const proto = ConvexBuilderWithHandler.prototype;
+    const props = Object.getOwnPropertyNames(proto);
+
+    for (const prop of props) {
+      if (prop !== "constructor") {
+        const value = (proto as any)[prop];
+        if (typeof value === "function") {
+          callable[prop] = value.bind(this);
+        }
+      }
+    }
+
+    // Also copy instance properties (like def)
+    callable.def = this.def;
+
+    return callable;
+  }
+
+  extend<TResult>(fn: (builder: this) => TResult): TResult {
+    return fn(this);
   }
 
   // Internal method to handle the call
