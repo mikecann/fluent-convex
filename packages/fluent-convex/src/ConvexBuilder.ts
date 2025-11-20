@@ -24,13 +24,11 @@ export class ConvexBuilder<
   query(): ConvexBuilderWithFunctionKind<
     TDataModel,
     "query",
-    QueryCtx<TDataModel>,
     QueryCtx<TDataModel>
   > {
     return new ConvexBuilderWithFunctionKind<
       TDataModel,
       "query",
-      QueryCtx<TDataModel>,
       QueryCtx<TDataModel>
     >({
       ...this.def,
@@ -41,13 +39,11 @@ export class ConvexBuilder<
   mutation(): ConvexBuilderWithFunctionKind<
     TDataModel,
     "mutation",
-    MutationCtx<TDataModel>,
     MutationCtx<TDataModel>
   > {
     return new ConvexBuilderWithFunctionKind<
       TDataModel,
       "mutation",
-      MutationCtx<TDataModel>,
       MutationCtx<TDataModel>
     >({
       ...this.def,
@@ -58,13 +54,11 @@ export class ConvexBuilder<
   action(): ConvexBuilderWithFunctionKind<
     TDataModel,
     "action",
-    ActionCtx<TDataModel>,
     ActionCtx<TDataModel>
   > {
     return new ConvexBuilderWithFunctionKind<
       TDataModel,
       "action",
-      ActionCtx<TDataModel>,
       ActionCtx<TDataModel>
     >({
       ...this.def,

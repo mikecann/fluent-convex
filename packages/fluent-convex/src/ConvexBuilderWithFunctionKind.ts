@@ -25,12 +25,10 @@ import {
 export class ConvexBuilderWithFunctionKind<
   TDataModel extends GenericDataModel = GenericDataModel,
   TFunctionType extends FunctionType = FunctionType,
-  TInitialContext extends Context = EmptyObject,
   TCurrentContext extends Context = EmptyObject,
   TArgsValidator extends ConvexArgsValidator | undefined = undefined,
   TReturnsValidator extends ConvexReturnsValidator | undefined = undefined,
   TVisibility extends Visibility = "public",
-  THandlerReturn = any,
 > {
   protected def: ConvexBuilderDef<
     TFunctionType,
@@ -53,22 +51,18 @@ export class ConvexBuilderWithFunctionKind<
   $context<U extends Context>(): ConvexBuilderWithFunctionKind<
     TDataModel,
     TFunctionType,
-    U & EmptyObject,
     U,
     TArgsValidator,
     TReturnsValidator,
-    TVisibility,
-    THandlerReturn
+    TVisibility
   > {
     return new ConvexBuilderWithFunctionKind<
       TDataModel,
       TFunctionType,
-      U & EmptyObject,
       U,
       TArgsValidator,
       TReturnsValidator,
-      TVisibility,
-      THandlerReturn
+      TVisibility
     >({
       ...this.def,
       middlewares: [],
@@ -76,8 +70,8 @@ export class ConvexBuilderWithFunctionKind<
   }
 
   middleware<UOutContext extends Context>(
-    middleware: ConvexMiddleware<TInitialContext, UOutContext>
-  ): ConvexMiddleware<TInitialContext, UOutContext>;
+    middleware: ConvexMiddleware<TCurrentContext, UOutContext>
+  ): ConvexMiddleware<TCurrentContext, UOutContext>;
   middleware<UInContext extends Context, UOutContext extends Context>(
     middleware: ConvexMiddleware<UInContext, UOutContext>
   ): ConvexMiddleware<UInContext, UOutContext>;
@@ -92,22 +86,18 @@ export class ConvexBuilderWithFunctionKind<
   ): ConvexBuilderWithFunctionKind<
     TDataModel,
     TFunctionType,
-    TInitialContext,
     TCurrentContext & UOutContext,
     TArgsValidator,
     TReturnsValidator,
-    TVisibility,
-    THandlerReturn
+    TVisibility
   > {
     return new ConvexBuilderWithFunctionKind<
       TDataModel,
       TFunctionType,
-      TInitialContext,
       TCurrentContext & UOutContext,
       TArgsValidator,
       TReturnsValidator,
-      TVisibility,
-      THandlerReturn
+      TVisibility
     >({
       ...this.def,
       middlewares: [...this.def.middlewares, middleware as AnyConvexMiddleware],
@@ -119,12 +109,10 @@ export class ConvexBuilderWithFunctionKind<
   ): ConvexBuilderWithFunctionKind<
     TDataModel,
     TFunctionType,
-    TInitialContext,
     TCurrentContext,
     ToConvexArgsValidator<UInput>,
     TReturnsValidator,
-    TVisibility,
-    THandlerReturn
+    TVisibility
   > {
     const convexValidator = isZodSchema(validator)
       ? (toConvexValidator(validator) as ToConvexArgsValidator<UInput>)
@@ -133,12 +121,10 @@ export class ConvexBuilderWithFunctionKind<
     return new ConvexBuilderWithFunctionKind<
       TDataModel,
       TFunctionType,
-      TInitialContext,
       TCurrentContext,
       ToConvexArgsValidator<UInput>,
       TReturnsValidator,
-      TVisibility,
-      THandlerReturn
+      TVisibility
     >({
       ...this.def,
       argsValidator: convexValidator,
@@ -150,12 +136,10 @@ export class ConvexBuilderWithFunctionKind<
   ): ConvexBuilderWithFunctionKind<
     TDataModel,
     TFunctionType,
-    TInitialContext,
     TCurrentContext,
     TArgsValidator,
     ToConvexReturnsValidator<UReturns>,
-    TVisibility,
-    THandlerReturn
+    TVisibility
   > {
     const convexValidator = isZodSchema(validator)
       ? (toConvexValidator(validator) as ToConvexReturnsValidator<UReturns>)
@@ -164,12 +148,10 @@ export class ConvexBuilderWithFunctionKind<
     return new ConvexBuilderWithFunctionKind<
       TDataModel,
       TFunctionType,
-      TInitialContext,
       TCurrentContext,
       TArgsValidator,
       ToConvexReturnsValidator<UReturns>,
-      TVisibility,
-      THandlerReturn
+      TVisibility
     >({
       ...this.def,
       returnsValidator: convexValidator,
@@ -190,7 +172,6 @@ export class ConvexBuilderWithFunctionKind<
   ): ConvexBuilderWithHandler<
     TDataModel,
     TFunctionType,
-    TInitialContext,
     TCurrentContext,
     TArgsValidator,
     TReturnsValidator,
@@ -229,7 +210,6 @@ export class ConvexBuilderWithFunctionKind<
     return new ConvexBuilderWithHandler<
       TDataModel,
       TFunctionType,
-      TInitialContext,
       TCurrentContext,
       TArgsValidator,
       TReturnsValidator,
@@ -241,7 +221,6 @@ export class ConvexBuilderWithFunctionKind<
     }) as ConvexBuilderWithHandler<
       TDataModel,
       TFunctionType,
-      TInitialContext,
       TCurrentContext,
       TArgsValidator,
       TReturnsValidator,
