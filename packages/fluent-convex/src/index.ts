@@ -20,6 +20,7 @@ export type {
   FunctionType,
   Visibility,
   EmptyObject,
+  ConvexBuilderDef,
 } from "./types";
 
 export type { GenericDataModel } from "convex/server";
