@@ -73,6 +73,13 @@ class MyExtendedBuilder<
 }
 
 describe("Extensibility", () => {
+  it("should allow extending the builder with a custom class using constructor reference", async () => {
+    const extended = convex.query().extend(MyExtendedBuilder);
+
+    expect(extended).toBeInstanceOf(MyExtendedBuilder);
+    expect(extended).toBeInstanceOf(ConvexBuilderWithFunctionKind);
+  });
+
   it("should allow extending the builder with a custom class", async () => {
     const extended = convex
       .query()

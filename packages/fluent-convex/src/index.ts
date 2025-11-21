@@ -22,6 +22,8 @@ export type {
   EmptyObject,
 } from "./types";
 
+export type { GenericDataModel } from "convex/server";
+
 export {
   isZodSchema,
   toConvexValidator,

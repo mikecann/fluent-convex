@@ -66,7 +66,7 @@ export class LoggedBuilder<
 // Example usage of the extended builder
 export const extendedQuery = convex
   .query()
-  .extend((builder) => new LoggedBuilder(builder))
+  .extend(LoggedBuilder)
   .withStandardLogging("MyExtendedQuery")
   .input({ echo: v.string() })
   .handler(async (ctx, args) => {

@@ -112,14 +112,14 @@ You can extend the builder with your own custom methods by subclassing `ConvexBu
 Subclass `ConvexBuilderWithFunctionKind` and add your custom methods.
 
 ```ts
-import { 
-  ConvexBuilderWithFunctionKind, 
-  type GenericDataModel, 
-  type FunctionType, 
-  type Context, 
-  type EmptyObject, 
-  type ConvexArgsValidator, 
-  type ConvexReturnsValidator 
+import {
+  ConvexBuilderWithFunctionKind,
+  type GenericDataModel,
+  type FunctionType,
+  type Context,
+  type EmptyObject,
+  type ConvexArgsValidator,
+  type ConvexReturnsValidator,
 } from "fluent-convex";
 
 class MyExtendedBuilder<
@@ -164,7 +164,10 @@ Use `.extend()` to switch to your custom builder.
 ```ts
 const myQuery = convex
   .query()
-  .extend((builder) => new MyExtendedBuilder(builder))
+  // You can pass the class constructor directly:
+  .extend(MyExtendedBuilder)
+  // OR use a factory function:
+  // .extend((builder) => new MyExtendedBuilder(builder))
   .myCustomMethod("hello") // ✅ Now you can call your method
   .input(v.object({}))
   .handler(async (ctx) => {

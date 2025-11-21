@@ -39,8 +39,22 @@ export class ConvexBuilderWithFunctionKind<
     this.def = def;
   }
 
-  extend<TResult>(fn: (builder: this) => TResult): TResult {
-    return fn(this);
+  extend<TResult>(fn: (builder: this) => TResult): TResult;
+  extend<TResult>(cls: new (builder: this) => TResult): TResult;
+  extend<TResult>(
+    fnOrCls: ((builder: this) => TResult) | (new (builder: this) => TResult)
+  ): TResult {
+    try {
+      return (fnOrCls as (builder: this) => TResult)(this);
+    } catch (error: any) {
+      if (
+        error instanceof TypeError &&
+        error.message.includes("Class constructor")
+      ) {
+        return new (fnOrCls as new (builder: this) => TResult)(this);
+      }
+      throw error;
+    }
   }
 
   $context<U extends Context>(): ConvexBuilderWithFunctionKind<
