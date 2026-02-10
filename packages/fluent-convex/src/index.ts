@@ -5,7 +5,6 @@ export { ConvexBuilderWithHandler } from "./ConvexBuilderWithHandler";
 
 export type {
   ConvexMiddleware,
-  ConvexMiddlewareOptions,
   AnyConvexMiddleware,
 } from "./middleware";
 
