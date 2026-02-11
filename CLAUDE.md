@@ -1,0 +1,1 @@
+please read @AGENTS.md
