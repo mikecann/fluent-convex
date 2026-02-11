@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { z } from "zod";
+import { z } from "zod/v4";
 import { convex } from "./lib";
 import { addTimestamp, authMiddleware, withLogging } from "./middleware";
 import { api, internal } from "./_generated/api";

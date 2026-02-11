@@ -1,7 +1,7 @@
 import { describe, it, assertType, expectTypeOf } from "vitest";
 import { createBuilder } from "fluent-convex";
 import { v } from "convex/values";
-import { z } from "zod";
+import { z } from "zod/v4";
 import type { Doc, Id, DataModel } from "./_generated/dataModel";
 
 const convex = createBuilder<DataModel>();

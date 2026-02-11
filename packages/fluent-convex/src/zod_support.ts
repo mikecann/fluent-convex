@@ -1,4 +1,4 @@
-import type { z } from "zod";
+import type { z } from "zod/v4";
 import { zodToConvex } from "convex-helpers/server/zod4";
 import type {
   PropertyValidators,
@@ -16,7 +16,6 @@ export function isZodSchema(value: any): value is z.ZodType {
 export function toConvexValidator<T extends z.ZodType>(
   schema: T
 ): PropertyValidators | GenericValidator {
-  // Cast: convex-helpers/server/zod4 types use zod/v4's $ZodType; our z is from "zod" (same runtime)
   return zodToConvex(schema as any) as any;
 }
 
