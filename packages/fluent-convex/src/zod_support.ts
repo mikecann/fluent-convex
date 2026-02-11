@@ -13,6 +13,16 @@ export function isZodSchema(value: any): value is z.ZodType {
   );
 }
 
+/**
+ * Convert a Zod schema to a Convex validator.
+ *
+ * **Important:** Only the structural shape is converted (string, number, object
+ * fields, etc.). Zod refinements (`.min()`, `.max()`, `.email()`, `.positive()`,
+ * `.regex()`, etc.) are silently dropped — Convex validators have no equivalent.
+ * This means refinements will run on the client (via Zod) but **not** on the
+ * server (via Convex). If you need server-side validation of constraints, add
+ * explicit checks in your handler.
+ */
 export function toConvexValidator<T extends z.ZodType>(
   schema: T
 ): PropertyValidators | GenericValidator {

@@ -25,7 +25,25 @@ import type {
   QueryCtx,
   MutationCtx,
   ActionCtx,
+  ExpectedReturnType,
 } from "./types";
+
+/**
+ * Determines the return type for the registered Convex function.
+ *
+ * When a returns validator is specified, uses the validator-derived type
+ * directly — this avoids circular type references when an action in the
+ * same file calls other functions via `api.*` without those functions
+ * having explicit `.returns()`. Without this, TypeScript would need to
+ * infer the handler's return type, which triggers circular resolution
+ * through the generated `api` type.
+ */
+type RegisteredReturnType<
+  TReturnsValidator extends ConvexReturnsValidator | undefined,
+  THandlerReturn,
+> = [TReturnsValidator] extends [ConvexReturnsValidator]
+  ? Promise<ExpectedReturnType<TReturnsValidator>>
+  : Promise<THandlerReturn>;
 
 export class ConvexBuilderWithHandler<
   TDataModel extends GenericDataModel = GenericDataModel,
@@ -176,19 +194,19 @@ export class ConvexBuilderWithHandler<
     ? RegisteredQuery<
         "public",
         InferredArgs<TArgsValidator>,
-        Promise<THandlerReturn>
+        RegisteredReturnType<TReturnsValidator, THandlerReturn>
       >
     : TFunctionType extends "mutation"
       ? RegisteredMutation<
           "public",
           InferredArgs<TArgsValidator>,
-          Promise<THandlerReturn>
+          RegisteredReturnType<TReturnsValidator, THandlerReturn>
         >
       : TFunctionType extends "action"
         ? RegisteredAction<
             "public",
             InferredArgs<TArgsValidator>,
-            Promise<THandlerReturn>
+            RegisteredReturnType<TReturnsValidator, THandlerReturn>
           >
         : never {
     return this._register("public") as any;
@@ -198,19 +216,19 @@ export class ConvexBuilderWithHandler<
     ? RegisteredQuery<
         "internal",
         InferredArgs<TArgsValidator>,
-        Promise<THandlerReturn>
+        RegisteredReturnType<TReturnsValidator, THandlerReturn>
       >
     : TFunctionType extends "mutation"
       ? RegisteredMutation<
           "internal",
           InferredArgs<TArgsValidator>,
-          Promise<THandlerReturn>
+          RegisteredReturnType<TReturnsValidator, THandlerReturn>
         >
       : TFunctionType extends "action"
         ? RegisteredAction<
             "internal",
             InferredArgs<TArgsValidator>,
-            Promise<THandlerReturn>
+            RegisteredReturnType<TReturnsValidator, THandlerReturn>
           >
         : never {
     return this._register("internal") as any;

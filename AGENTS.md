@@ -22,5 +22,6 @@ If you add or rename exported functions in the example app, run `cd apps/example
 - **Two execution paths**: `_call()` and `_register()` in `ConvexBuilderWithHandler` both use `_executeWithMiddleware`. Keep them in sync.
 - **`extend()` uses prototype-based class detection** -- see `extend.ts`. Shared across all builder classes.
 - **`ConvexBuilderWithHandler` constructor returns a function**, not `this`. `instanceof` will fail.
-- **Zod refinements are not enforced server-side** -- `zodToConvex` only converts shape. Don't claim runtime Zod validation.
+- **Zod refinements are not enforced server-side** -- `zodToConvex` only converts shape. Don't claim runtime Zod validation. Documented in `zod_support.ts` JSDoc and README.
 - **Post-handler `.use()` breaks type safety** -- the handler's context type can't see middleware added after it, requiring `(context as any)` casts.
+- **Circular types with `api.*` in same file** -- calling `api.myFunctions.X` in the same file without `.returns()` on the callees causes TS7022. This is a standard Convex/TS limitation, not fluent-convex specific. See commented-out example in `myFunctions.ts`.

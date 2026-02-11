@@ -513,8 +513,23 @@ export const listNumbersWithLoggingAndAuth = convex
   })
   .public();
 
-// Test action that calls functions without .returns() - this should work with proper types
-// Commented out to avoid circular type errors during investigation
+// ⚠️ Circular type issue: calling api.myFunctions.* in the same file
+//
+// When a function calls other functions via `api.*` in the SAME file,
+// TypeScript must resolve the `api` type, which depends on the return
+// types of ALL exports in this file. If those exports don't have explicit
+// `.returns()` validators, TypeScript tries to infer their return types
+// from the handler bodies — but that requires resolving `api` first.
+// This creates a circular initializer (TS7022).
+//
+// This is a standard Convex/TypeScript limitation, not specific to
+// fluent-convex. The same issue occurs with standard `query()`/`action()`.
+//
+// Workarounds:
+//   1. Add `.returns()` to the CALLED functions (breaks the inference cycle)
+//   2. Move the calling function to a separate file
+//   3. Use `internal.*` or `api.*` from a different module
+//
 // export const testCallingFunctionsWithoutReturns = convex
 //   .action()
 //   .input({ value: v.number() })

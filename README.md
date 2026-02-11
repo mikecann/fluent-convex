@@ -250,6 +250,19 @@ export const doubleNumber = testQuery.public();
 - `.handler(fn)` - Define the function handler
 - `.extend(fn)` - Extend the builder with a custom class
 
+## Caveats
+
+### Zod refinements are not enforced server-side
+
+When using Zod schemas with `.input()` or `.returns()`, only the structural shape is converted to a Convex validator (string, number, object fields, etc.). Zod refinements like `.min()`, `.max()`, `.email()`, `.positive()`, `.regex()`, etc. are **silently dropped** — Convex validators have no equivalent. This means refinements validate on the client via Zod but **not** on the server via Convex. If you need server-side constraint validation, add explicit checks in your handler.
+
+### Circular types when calling `api.*` in the same file
+
+When a function calls other functions via `api.*` in the same file, and those functions don't have explicit `.returns()` validators, TypeScript may report circular initializer errors (TS7022). This is a standard Convex/TypeScript limitation, not specific to fluent-convex. Workarounds:
+1. Add `.returns()` to the **called** functions — this gives them explicit return types, breaking the cycle
+2. Move the calling function to a separate file
+3. Use `internal.*` from a different module
+
 ## Example
 
 Check out the `/apps/example` directory for a complete working example with various use cases including:
