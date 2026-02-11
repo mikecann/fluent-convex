@@ -138,7 +138,7 @@ export const internalListAll = convex
 export const quickQuery = convex
   .query()
   .use(
-    convex.query().middleware(async (context, next) => {
+    convex.query().createMiddleware(async (context, next) => {
       return next({
         ...context,
         requestId: Math.random().toString(36).substring(7),
@@ -170,7 +170,7 @@ export const queryWithPostHandlerMiddleware = convex
     };
   })
   .use(
-    convex.query().middleware(async (context, next) => {
+    convex.query().createMiddleware(async (context, next) => {
       return next({
         ...context,
         requestId: `req-${Math.random().toString(36).substring(7)}`,
@@ -195,7 +195,7 @@ export const queryWithMultiplePostHandlerMiddleware = convex
     };
   })
   .use(
-    convex.query().middleware(async (context, next) => {
+    convex.query().createMiddleware(async (context, next) => {
       return next({
         ...context,
         requestId: `req-${Date.now()}`,
@@ -217,7 +217,7 @@ export const mutationWithPostHandlerMiddleware = convex
     };
   })
   .use(
-    convex.mutation().middleware(async (context, next) => {
+    convex.mutation().createMiddleware(async (context, next) => {
       return next({
         ...context,
         requestId: `mut-${Date.now()}`,

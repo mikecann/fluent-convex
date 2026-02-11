@@ -20,7 +20,7 @@ If you add or rename exported functions in the example app, run `cd apps/example
 ## Common pitfalls
 
 - **Two execution paths**: `_call()` and `_register()` in `ConvexBuilderWithHandler` both use `_executeWithMiddleware`. Keep them in sync.
-- **`extend()` uses try/catch class detection** -- fragile, engine-specific. Be cautious editing.
+- **`extend()` uses prototype-based class detection** -- see `extend.ts`. Shared across all builder classes.
 - **`ConvexBuilderWithHandler` constructor returns a function**, not `this`. `instanceof` will fail.
 - **Zod refinements are not enforced server-side** -- `zodToConvex` only converts shape. Don't claim runtime Zod validation.
 - **Post-handler `.use()` breaks type safety** -- the handler's context type can't see middleware added after it, requiring `(context as any)` casts.

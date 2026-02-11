@@ -45,7 +45,7 @@ export const listNumbers = convex
   .public(); // ✅ Must end with .public() or .internal()
 
 // With middleware
-const authMiddleware = convex.query().middleware(async (context, next) => {
+const authMiddleware = convex.query().createMiddleware(async (context, next) => {
   const identity = await context.auth.getUserIdentity();
   if (!identity) {
     throw new Error("Unauthorized");
@@ -184,7 +184,7 @@ The builder API is flexible about method ordering, allowing you to structure you
 You can add middleware **after** defining the handler, which is useful when you want to wrap existing handlers with additional functionality:
 
 ```ts
-const authMiddleware = convex.query().middleware(async (context, next) => {
+const authMiddleware = convex.query().createMiddleware(async (context, next) => {
   const identity = await context.auth.getUserIdentity();
   if (!identity) {
     throw new Error("Unauthorized");
@@ -246,7 +246,7 @@ export const doubleNumber = testQuery.public();
 - `.input(validator)` - Set input validation (Convex or Zod)
 - `.returns(validator)` - Set return validation (Convex or Zod)
 - `.use(middleware)` - Apply middleware
-- `.middleware(fn)` - Create a middleware function
+- `.createMiddleware(fn)` - Create a middleware function
 - `.handler(fn)` - Define the function handler
 - `.extend(fn)` - Extend the builder with a custom class
 

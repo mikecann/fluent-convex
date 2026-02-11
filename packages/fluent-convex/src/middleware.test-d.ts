@@ -21,7 +21,7 @@ describe("Middleware", () => {
     it("should extend context with middleware", () => {
       const authMiddleware = convex
         .query()
-        .middleware(async (context, next) => {
+        .createMiddleware(async (context, next) => {
           return next({
             ...context,
             user: { id: "123", name: "Test User" },
@@ -48,7 +48,7 @@ describe("Middleware", () => {
     it("should chain multiple middleware", () => {
       const authMiddleware = convex
         .query()
-        .middleware(async (context, next) => {
+        .createMiddleware(async (context, next) => {
           return next({
             ...context,
             user: { id: "123", name: "Test User" },
@@ -57,7 +57,7 @@ describe("Middleware", () => {
 
       const loggingMiddleware = convex
         .query()
-        .middleware(async (context, next) => {
+        .createMiddleware(async (context, next) => {
           return next({
             ...context,
             requestId: "req-123",
@@ -82,7 +82,7 @@ describe("Middleware", () => {
     it("should work with mutations", () => {
       const authMiddleware = convex
         .mutation()
-        .middleware(async (context, next) => {
+        .createMiddleware(async (context, next) => {
           return next({
             ...context,
             userId: "user-123",
@@ -105,7 +105,7 @@ describe("Middleware", () => {
     it("should work with actions", () => {
       const authMiddleware = convex
         .action()
-        .middleware(async (context, next) => {
+        .createMiddleware(async (context, next) => {
           return next({
             ...context,
             token: "token-123",
@@ -125,14 +125,14 @@ describe("Middleware", () => {
     });
 
     it("should respect middleware application order", () => {
-      const first = convex.query().middleware(async (context, next) => {
+      const first = convex.query().createMiddleware(async (context, next) => {
         return next({
           ...context,
           first: "first",
         });
       });
 
-      const second = convex.query().middleware(async (context, next) => {
+      const second = convex.query().createMiddleware(async (context, next) => {
         return next({
           ...context,
           second: "second",

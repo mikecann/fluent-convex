@@ -181,7 +181,7 @@ describe("Extensibility", () => {
       .query()
       .extend((builder) => new MyExtendedBuilder(builder));
 
-    const middleware = convex.query().middleware(async (ctx, next) => {
+    const middleware = convex.query().createMiddleware(async (ctx, next) => {
       return next({ ...ctx, extra: "data" });
     });
 

@@ -36,7 +36,7 @@ describe("Builder Core", () => {
       const builder = convex;
       const authMiddleware = convex
         .query()
-        .middleware(async (context, next) => {
+        .createMiddleware(async (context, next) => {
           return next(context);
         });
 
@@ -138,7 +138,7 @@ describe("Builder Core", () => {
     it("should prevent calling .handler() twice even with middleware in between", () => {
       const authMiddleware = convex
         .query()
-        .middleware(async (context, next) => {
+        .createMiddleware(async (context, next) => {
           return next(context);
         });
 
@@ -170,7 +170,7 @@ describe("Builder Core", () => {
     it("should allow chaining .use() after handler()", () => {
       const authMiddleware = convex
         .query()
-        .middleware(async (context, next) => {
+        .createMiddleware(async (context, next) => {
           return next(context);
         });
 
@@ -290,7 +290,7 @@ describe("Builder Core", () => {
     it("should preserve callability through middleware chain", () => {
       const authMiddleware = convex
         .query()
-        .middleware(async (context, next) => {
+        .createMiddleware(async (context, next) => {
           return next({
             ...context,
             userId: "user-123",
@@ -319,7 +319,7 @@ describe("Builder Core", () => {
     it("should preserve callability after multiple middleware", () => {
       const authMiddleware = convex
         .query()
-        .middleware(async (context, next) => {
+        .createMiddleware(async (context, next) => {
           return next({
             ...context,
             userId: "user-123",
@@ -328,7 +328,7 @@ describe("Builder Core", () => {
 
       const loggingMiddleware = convex
         .query()
-        .middleware(async (context, next) => {
+        .createMiddleware(async (context, next) => {
           return next({
             ...context,
             requestId: "req-123",

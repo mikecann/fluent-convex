@@ -6,7 +6,7 @@ import type { Auth } from "convex/server";
 export const authMiddleware = convex
   // Define a minimal context type that all Convex contexts have
   .$context<{ auth: Auth }>()
-  .middleware(async (context, next) => {
+  .createMiddleware(async (context, next) => {
     const identity = await context.auth.getUserIdentity();
     if (!identity) {
       throw new Error("Unauthorized");
@@ -23,7 +23,7 @@ export const authMiddleware = convex
 
 // A generic middleware that adds a timestamp
 // Works with queries, mutations, and actions
-export const addTimestamp = convex.middleware(async (context, next) => {
+export const addTimestamp = convex.createMiddleware(async (context, next) => {
   return next({
     ...context,
     timestamp: Date.now(),
@@ -31,7 +31,7 @@ export const addTimestamp = convex.middleware(async (context, next) => {
 });
 
 export const addValueMiddleware = <TValue>(value: TValue) =>
-  convex.middleware(async (context, next) => {
+  convex.createMiddleware(async (context, next) => {
     return next({
       ...context,
       value,
@@ -43,7 +43,7 @@ export const addValueMiddleware = <TValue>(value: TValue) =>
 // the rest of the chain (subsequent middleware + handler), so we can
 // measure timing and catch errors from downstream.
 export const withLogging = (operationName: string) =>
-  convex.middleware(async (context, next) => {
+  convex.createMiddleware(async (context, next) => {
     const start = Date.now();
     console.log(`[${operationName}] Starting...`);
     try {

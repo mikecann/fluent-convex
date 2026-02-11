@@ -232,7 +232,7 @@ describe("Middleware context transformation", () => {
   it("should extend context with middleware", () => {
     const authMiddleware = convex
       .query()
-      .middleware(async (context, next) => {
+      .createMiddleware(async (context, next) => {
         return next({
           ...context,
           user: { id: "123", name: "Test User" },
@@ -257,7 +257,7 @@ describe("Middleware context transformation", () => {
   it("should compose multiple middleware", () => {
     const authMiddleware = convex
       .query()
-      .middleware(async (context, next) => {
+      .createMiddleware(async (context, next) => {
         return next({
           ...context,
           userId: "user123" as const,
@@ -266,7 +266,7 @@ describe("Middleware context transformation", () => {
 
     const timestampMiddleware = convex
       .query()
-      .middleware(async (context, next) => {
+      .createMiddleware(async (context, next) => {
         return next({
           ...context,
           timestamp: 123456789,
@@ -329,7 +329,7 @@ describe("Visibility and function types", () => {
 
 describe("Middleware after handler", () => {
   it("should allow middleware to be added after handler", () => {
-    const middleware = convex.query().middleware(async (context, next) => {
+    const middleware = convex.query().createMiddleware(async (context, next) => {
       return next({
         ...context,
         requestId: "test-123",
@@ -349,14 +349,14 @@ describe("Middleware after handler", () => {
   });
 
   it("should allow multiple middleware to be added after handler", () => {
-    const middleware1 = convex.query().middleware(async (context, next) => {
+    const middleware1 = convex.query().createMiddleware(async (context, next) => {
       return next({
         ...context,
         requestId: "test-123",
       });
     });
 
-    const middleware2 = convex.query().middleware(async (context, next) => {
+    const middleware2 = convex.query().createMiddleware(async (context, next) => {
       return next({
         ...context,
         timestamp: Date.now(),
@@ -378,7 +378,7 @@ describe("Middleware after handler", () => {
   it("should allow middleware after handler for mutations", () => {
     const middleware = convex
       .mutation()
-      .middleware(async (context, next) => {
+      .createMiddleware(async (context, next) => {
         return next({
           context: {
             ...context,
@@ -399,7 +399,7 @@ describe("Middleware after handler", () => {
   });
 
   it("should allow middleware after handler for actions", () => {
-    const middleware = convex.action().middleware(async (context, next) => {
+    const middleware = convex.action().createMiddleware(async (context, next) => {
       return next({
         ...context,
         requestId: "act-123",

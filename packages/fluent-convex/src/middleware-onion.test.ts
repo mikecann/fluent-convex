@@ -17,14 +17,14 @@ describe("Onion middleware composition", () => {
   it("middleware executes in onion order (before → handler → after)", async () => {
     const order: string[] = [];
 
-    const outer = convex.query().middleware(async (context, next) => {
+    const outer = convex.query().createMiddleware(async (context, next) => {
       order.push("outer-before");
       const result = await next(context);
       order.push("outer-after");
       return result;
     });
 
-    const inner = convex.query().middleware(async (context, next) => {
+    const inner = convex.query().createMiddleware(async (context, next) => {
       order.push("inner-before");
       const result = await next(context);
       order.push("inner-after");
@@ -55,7 +55,7 @@ describe("Onion middleware composition", () => {
   it("middleware can catch errors thrown by the handler", async () => {
     let caughtError: string | null = null;
 
-    const errorCatcher = convex.query().middleware(async (context, next) => {
+    const errorCatcher = convex.query().createMiddleware(async (context, next) => {
       try {
         return await next(context);
       } catch (e: any) {
@@ -80,7 +80,7 @@ describe("Onion middleware composition", () => {
   it("middleware can measure handler execution time", async () => {
     let measuredDuration = 0;
 
-    const timer = convex.query().middleware(async (context, next) => {
+    const timer = convex.query().createMiddleware(async (context, next) => {
       const start = Date.now();
       const result = await next(context);
       measuredDuration = Date.now() - start;
@@ -103,11 +103,11 @@ describe("Onion middleware composition", () => {
   });
 
   it("context enrichment still works with onion middleware", async () => {
-    const addUser = convex.query().middleware(async (context, next) => {
+    const addUser = convex.query().createMiddleware(async (context, next) => {
       return next({ ...context, user: "alice" });
     });
 
-    const addTimestamp = convex.query().middleware(async (context, next) => {
+    const addTimestamp = convex.query().createMiddleware(async (context, next) => {
       return next({ ...context, timestamp: 12345 });
     });
 

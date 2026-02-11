@@ -289,7 +289,7 @@ describe("Handler uniqueness enforcement", () => {
 
     const authMiddleware = testBuilder
       .query()
-      .middleware(async (context, next: any) => {
+      .createMiddleware(async (context, next: any) => {
         return next(context);
       });
 

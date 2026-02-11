@@ -74,13 +74,13 @@ export class ConvexBuilder<
   }
 
   $context<U extends Context>(): {
-    middleware<UOutContext extends Context>(
+    createMiddleware<UOutContext extends Context>(
       middleware: ConvexMiddleware<U, UOutContext>
     ): ConvexMiddleware<U, UOutContext>;
   } {
     // Return an object that allows middleware creation with a specific context type
     return {
-      middleware<UOutContext extends Context>(
+      createMiddleware<UOutContext extends Context>(
         middleware: ConvexMiddleware<U, UOutContext>
       ): ConvexMiddleware<U, UOutContext> {
         return middleware;
@@ -88,13 +88,17 @@ export class ConvexBuilder<
     };
   }
 
-  middleware<UOutContext extends Context>(
+  /**
+   * Create a typed middleware function. This is a type-helper that returns the
+   * middleware you pass in — use `.use()` to apply middleware to a builder chain.
+   */
+  createMiddleware<UOutContext extends Context>(
     middleware: ConvexMiddleware<EmptyObject, UOutContext>
   ): ConvexMiddleware<EmptyObject, UOutContext>;
-  middleware<UInContext extends Context, UOutContext extends Context>(
+  createMiddleware<UInContext extends Context, UOutContext extends Context>(
     middleware: ConvexMiddleware<UInContext, UOutContext>
   ): ConvexMiddleware<UInContext, UOutContext>;
-  middleware<UInContext extends Context, UOutContext extends Context>(
+  createMiddleware<UInContext extends Context, UOutContext extends Context>(
     middleware: ConvexMiddleware<UInContext, UOutContext>
   ): ConvexMiddleware<UInContext, UOutContext> {
     return middleware;
