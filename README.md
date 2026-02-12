@@ -7,17 +7,15 @@ A fluent API builder for Convex functions with middleware support, inspired by [
 - 🔄 **Middleware support** - Compose reusable middleware for authentication, logging, and more
 - 🎯 **Type-safe** - Full TypeScript support with type inference
 - ✨ **Fluent API** - Chain methods for a clean, readable syntax
-- 🔌 **Zod integration** - Use Zod schemas alongside Convex validators
+- 🔌 **Optional Zod integration** - Use Zod schemas alongside Convex validators (Zod is not required)
 - 🧩 **Extensible** - Extend the builder with your own custom methods
 - 🚀 **Works with Convex** - Built on top of Convex's function system
 
 ## Installation
 
 ```bash
-npm install fluent-convex convex zod
+npm install fluent-convex
 ```
-
-**Note:** `convex-helpers` is automatically installed as a dependency of `fluent-convex`, so you don't need to install it separately.
 
 ## Quick Start
 
@@ -78,7 +76,15 @@ export const listNumbersAuth = convex
   .public(); // ✅ Must end with .public() or .internal()
 ```
 
-## Using Zod
+## Using Zod (Optional)
+
+Zod is an optional peer dependency — the library works perfectly fine with just Convex validators (`v.string()`, `v.object({...})`, etc.). If you want to use Zod schemas for input/return validation, install it separately:
+
+```bash
+npm install zod
+```
+
+Once installed, you can use Zod schemas anywhere you'd use a Convex validator. The library detects Zod schemas at runtime and converts them to Convex validators automatically.
 
 ```ts
 import { z } from "zod";
