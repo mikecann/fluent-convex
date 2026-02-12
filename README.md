@@ -2,15 +2,15 @@
 
 A fluent API builder for Convex functions with middleware support, inspired by [oRPC](https://orpc.unnoq.com/).
 
-**[Live Docs & Interactive Showcase](https://fluent-convex.convex.site)** -- see every feature in action with live demos and real source code.
+**[Live Docs & Interactive Showcase](https://friendly-zebra-716.convex.site)** -- see every feature in action with live demos and real source code.
 
 ## Features
 
-- **Middleware support** - Compose reusable middleware for authentication, logging, and more ([docs](https://fluent-convex.convex.site#middleware))
+- **Middleware support** - Compose reusable middleware for authentication, logging, and more ([docs](https://friendly-zebra-716.convex.site#middleware))
 - **Type-safe** - Full TypeScript support with type inference
-- **Fluent API** - Chain methods for a clean, readable syntax ([docs](https://fluent-convex.convex.site#basics))
-- **Plugin system** - Extend with plugins like `fluent-convex/zod` for Zod schema support ([docs](https://fluent-convex.convex.site#zod-plugin))
-- **Extensible** - Build your own plugins with the `_clone()` factory pattern ([docs](https://fluent-convex.convex.site#custom-plugins))
+- **Fluent API** - Chain methods for a clean, readable syntax ([docs](https://friendly-zebra-716.convex.site#basics))
+- **Plugin system** - Extend with plugins like `fluent-convex/zod` for Zod schema support ([docs](https://friendly-zebra-716.convex.site#zod-plugin))
+- **Extensible** - Build your own plugins with the `_clone()` factory pattern ([docs](https://friendly-zebra-716.convex.site#custom-plugins))
 - **Works with Convex** - Built on top of Convex's function system
 
 ## Installation
@@ -21,7 +21,7 @@ npm install fluent-convex
 
 ## Quick Start
 
-> For a complete walkthrough with live demos, see the **[Getting Started guide](https://fluent-convex.convex.site#getting-started)**.
+> For a complete walkthrough with live demos, see the **[Getting Started guide](https://friendly-zebra-716.convex.site#getting-started)**.
 
 **Important:** All functions must end with `.public()` or `.internal()` to be registered with Convex.
 
@@ -82,7 +82,7 @@ export const listNumbersAuth = convex
 
 ## Validation
 
-> See the **[Validation docs](https://fluent-convex.convex.site#validation)** for a side-by-side comparison of all three approaches with live demos.
+> See the **[Validation docs](https://friendly-zebra-716.convex.site#validation)** for a side-by-side comparison of all three approaches with live demos.
 
 fluent-convex supports three flavors of input validation through the same `.input()` API:
 
@@ -92,7 +92,7 @@ fluent-convex supports three flavors of input validation through the same `.inpu
 
 ## Middleware
 
-> See the **[Middleware docs](https://fluent-convex.convex.site#middleware)** for detailed examples of both patterns.
+> See the **[Middleware docs](https://friendly-zebra-716.convex.site#middleware)** for detailed examples of both patterns.
 
 There are two main middleware patterns:
 
@@ -101,7 +101,7 @@ There are two main middleware patterns:
 
 ## Reusable Chains
 
-> See the **[Reusable Chains docs](https://fluent-convex.convex.site#reusable-chains)** for callable syntax, stacking middleware, and the "define once, register multiple ways" pattern.
+> See the **[Reusable Chains docs](https://friendly-zebra-716.convex.site#reusable-chains)** for callable syntax, stacking middleware, and the "define once, register multiple ways" pattern.
 
 Because the builder is immutable, you can stop the chain at any point and reuse that partial builder later. A builder with a `.handler()` but no `.public()` is called a **callable** -- you can invoke it directly for testing or extend it with more middleware before registering.
 
@@ -120,7 +120,7 @@ export const listTasks = authedQuery
 
 ### Zod Plugin (`fluent-convex/zod`)
 
-> See the **[Zod Plugin docs](https://fluent-convex.convex.site#zod-plugin)** for live demos including refinement validation.
+> See the **[Zod Plugin docs](https://friendly-zebra-716.convex.site#zod-plugin)** for live demos including refinement validation.
 
 The Zod plugin adds Zod schema support for `.input()` and `.returns()`, with **full runtime validation** including refinements (`.min()`, `.max()`, `.email()`, etc.).
 
@@ -164,7 +164,7 @@ Key features:
 
 ## Extensibility
 
-> See the **[Custom Plugins docs](https://fluent-convex.convex.site#custom-plugins)** for a complete worked example with live demo.
+> See the **[Custom Plugins docs](https://friendly-zebra-716.convex.site#custom-plugins)** for a complete worked example with live demo.
 
 You can extend the builder with your own plugins by subclassing `ConvexBuilderWithFunctionKind` and overriding the `_clone()` factory method.
 
@@ -249,7 +249,7 @@ export const myQuery = convex
 
 ## Actions
 
-> See the **[Actions docs](https://fluent-convex.convex.site#actions)** for live demos of seeding data and orchestrating queries.
+> See the **[Actions docs](https://friendly-zebra-716.convex.site#actions)** for live demos of seeding data and orchestrating queries.
 
 Actions work with the same fluent API. Define them with `.action()` and use middleware as normal:
 
@@ -344,18 +344,18 @@ When a function calls other functions via `api.*` in the same file, and those fu
 
 ## Documentation
 
-The **[live docs site](https://fluent-convex.convex.site)** is an interactive showcase that demonstrates every feature with working live demos. The code snippets shown on the docs site are the actual source code powering the app -- imported via Vite `?raw` imports, so what you see is what runs.
+The **[live docs site](https://friendly-zebra-716.convex.site)** is an interactive showcase that demonstrates every feature with working live demos. The code snippets shown on the docs site are the actual source code powering the app -- imported via Vite `?raw` imports, so what you see is what runs.
 
 Sections:
-- [Getting Started](https://fluent-convex.convex.site#getting-started) -- builder setup and overview
-- [Basics](https://fluent-convex.convex.site#basics) -- queries, mutations, and the fluent chain
-- [Validation](https://fluent-convex.convex.site#validation) -- property validators, object validators, and Zod schemas
-- [Middleware](https://fluent-convex.convex.site#middleware) -- context-enrichment and onion middleware
-- [Reusable Chains](https://fluent-convex.convex.site#reusable-chains) -- callable syntax and composability
-- [Zod Plugin](https://fluent-convex.convex.site#zod-plugin) -- runtime refinement validation
-- [Custom Plugins](https://fluent-convex.convex.site#custom-plugins) -- building your own plugins with `.extend()`
-- [Actions](https://fluent-convex.convex.site#actions) -- orchestrating queries and mutations
-- [Auth Middleware](https://fluent-convex.convex.site#auth) -- reusable auth patterns
+- [Getting Started](https://friendly-zebra-716.convex.site#getting-started) -- builder setup and overview
+- [Basics](https://friendly-zebra-716.convex.site#basics) -- queries, mutations, and the fluent chain
+- [Validation](https://friendly-zebra-716.convex.site#validation) -- property validators, object validators, and Zod schemas
+- [Middleware](https://friendly-zebra-716.convex.site#middleware) -- context-enrichment and onion middleware
+- [Reusable Chains](https://friendly-zebra-716.convex.site#reusable-chains) -- callable syntax and composability
+- [Zod Plugin](https://friendly-zebra-716.convex.site#zod-plugin) -- runtime refinement validation
+- [Custom Plugins](https://friendly-zebra-716.convex.site#custom-plugins) -- building your own plugins with `.extend()`
+- [Actions](https://friendly-zebra-716.convex.site#actions) -- orchestrating queries and mutations
+- [Auth Middleware](https://friendly-zebra-716.convex.site#auth) -- reusable auth patterns
 
 The docs source lives in [`/apps/docs`](./apps/docs) and is auto-deployed on every push to `main`.
 
@@ -365,7 +365,7 @@ This is a monorepo using npm workspaces:
 
 - `/packages/fluent-convex` - The core library (includes the Zod plugin at `fluent-convex/zod`)
 - `/apps/example` - Example Convex app
-- `/apps/docs` - Interactive docs & showcase site ([live](https://fluent-convex.convex.site))
+- `/apps/docs` - Interactive docs & showcase site ([live](https://friendly-zebra-716.convex.site))
 
 ### Setup
 
