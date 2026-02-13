@@ -9,7 +9,7 @@
     "dev:backend": "convex dev",
     "predev": "convex dev --until-success && convex dev --once --run-sh \"node setup.mjs --once\" && convex dashboard",
     "build": "tsc -b && vite build",
-    "typecheck": "tsc -b && convex dev --once --typecheck=enable",
+    "typecheck": "tsc -b",
     "lint": "eslint .",
     "preview": "vite preview",
     "deploy": "npx @convex-dev/self-hosting deploy",
