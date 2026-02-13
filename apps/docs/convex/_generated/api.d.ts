@@ -13,10 +13,12 @@ import type * as auth from "../auth.js";
 import type * as authed from "../authed.js";
 import type * as basics from "../basics.js";
 import type * as chains from "../chains.js";
+import type * as crons from "../crons.js";
 import type * as http from "../http.js";
 import type * as lib from "../lib.js";
 import type * as middleware from "../middleware.js";
 import type * as plugin from "../plugin.js";
+import type * as seed from "../seed.js";
 import type * as staticHosting from "../staticHosting.js";
 import type * as validators from "../validators.js";
 
@@ -32,10 +34,12 @@ declare const fullApi: ApiFromModules<{
   authed: typeof authed;
   basics: typeof basics;
   chains: typeof chains;
+  crons: typeof crons;
   http: typeof http;
   lib: typeof lib;
   middleware: typeof middleware;
   plugin: typeof plugin;
+  seed: typeof seed;
   staticHosting: typeof staticHosting;
   validators: typeof validators;
 }>;
