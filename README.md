@@ -1,4 +1,4 @@
-![logo](apps/docs/public/logo.png)
+![logo](apps/docs/public/logo-128.png)
 
 # Fluent Convex
 
