@@ -17,7 +17,7 @@
   },
   "dependencies": {
     "@convex-dev/auth": "^0.0.90",
-    "@convex-dev/self-hosting": "^0.1.0",
+    "@convex-dev/self-hosting": "^0.1.1",
     "convex": "^1.31.7",
     "convex-helpers": "^0.1.112",
     "fluent-convex": "*",
