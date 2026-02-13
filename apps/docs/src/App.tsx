@@ -6,7 +6,6 @@ import { Header } from "./components/Header";
 import { Sidebar } from "./components/Sidebar";
 import { Content } from "./components/Content";
 import { GettingStartedSection } from "./sections/GettingStartedSection";
-import { BasicsSection } from "./sections/BasicsSection";
 import { ValidatorsSection } from "./sections/ValidatorsSection";
 import { MiddlewareSection } from "./sections/MiddlewareSection";
 import { ReusableChainsSection } from "./sections/ReusableChainsSection";
@@ -23,8 +22,6 @@ function PageContent() {
   switch (route.name) {
     case "gettingStarted":
       return <GettingStartedSection />;
-    case "basics":
-      return <BasicsSection />;
     case "validation":
       return <ValidatorsSection />;
     case "middleware":

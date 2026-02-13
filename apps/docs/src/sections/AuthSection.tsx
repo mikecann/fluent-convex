@@ -2,7 +2,7 @@ import { Authenticated, Unauthenticated } from "convex/react";
 import { CodeBlock } from "../components/CodeBlock";
 import { Prose, DemoCard } from "../components/ui";
 import { TaskManager, SignInForm } from "../components/Auth";
-import { authedSource } from "../sources";
+import { authedSource, fluentSource } from "../sources";
 
 export function AuthSection() {
   return (
@@ -24,7 +24,7 @@ export function AuthSection() {
           available, fully typed, no casting needed.
         </p>
       </Prose>
-      <CodeBlock source={authedSource} region="reusableAuthChains" title="convex/authed.ts - defining reusable auth chains" file="convex/authed.ts" />
+      <CodeBlock source={fluentSource} region="reusableAuthChains" title="convex/fluent.ts - defining reusable auth chains" file="convex/fluent.ts" />
       <Prose>
         <p>
           Building functions from these chains is clean and minimal.{" "}

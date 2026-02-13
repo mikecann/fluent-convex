@@ -1,8 +1,14 @@
+import { useMutation, useQuery } from "convex/react";
+import { api } from "../../convex/_generated/api";
 import { CodeBlock } from "../components/CodeBlock";
-import { AnchorHeading, InfoCallout, Prose } from "../components/ui";
-import { libSource, authedSource } from "../sources";
+import { AnchorHeading, InfoCallout, Prose, DemoCard, Btn } from "../components/ui";
+import { fluentSource, basicsSource } from "../sources";
 
 export function GettingStartedSection() {
+  const result = useQuery(api.basics.listNumbers, { count: 10 });
+  const addNumber = useMutation(api.basics.addNumber);
+  const deleteAll = useMutation(api.basics.deleteAllNumbers);
+
   return (
     <section id="getting-started" className="flex flex-col gap-6">
       <div>
@@ -28,6 +34,11 @@ export function GettingStartedSection() {
           validation, and an <strong>extension system</strong> for building your own plugins.
         </p>
       </Prose>
+
+      <InfoCallout>
+        Every code snippet on this page is the <strong>actual source code</strong> powering this
+        app, imported via Vite&apos;s <code className="bg-sky-200/60 dark:bg-sky-900/60 px-1 py-0.5 rounded text-sm">?raw</code> imports. What you see is what runs.
+      </InfoCallout>
 
       <div className="flex flex-col gap-3">
         <AnchorHeading id="installation" className="text-xl font-semibold">Installation</AnchorHeading>
@@ -56,14 +67,48 @@ export function GettingStartedSection() {
           in your backend imports this builder and uses it to define functions.
         </p>
       </Prose>
-      <div className="grid md:grid-cols-2 gap-4">
-        <CodeBlock source={libSource} region="builder" title="convex/lib.ts" file="convex/lib.ts" />
-        <CodeBlock source={authedSource} region="reusableAuthChains" title="convex/authed.ts - reusable chains" file="convex/authed.ts" />
-      </div>
-      <InfoCallout>
-        Every code snippet on this page is the <strong>actual source code</strong> powering this
-        app, imported via Vite&apos;s <code className="bg-sky-200/60 dark:bg-sky-900/60 px-1 py-0.5 rounded text-sm">?raw</code> imports. What you see is what runs.
-      </InfoCallout>
+      <CodeBlock source={fluentSource} region="builder" title="convex/fluent.ts" file="convex/fluent.ts" />
+
+      <Prose>
+        <p>
+          With the builder in place, you can define queries, mutations, and actions using a
+          fluent chain. Call{" "}
+          <code className="bg-slate-200 dark:bg-slate-800 px-1 py-0.5 rounded text-sm">.query()</code>,{" "}
+          <code className="bg-slate-200 dark:bg-slate-800 px-1 py-0.5 rounded text-sm">.mutation()</code>, or{" "}
+          <code className="bg-slate-200 dark:bg-slate-800 px-1 py-0.5 rounded text-sm">.action()</code> on the
+          builder, add input validation with{" "}
+          <code className="bg-slate-200 dark:bg-slate-800 px-1 py-0.5 rounded text-sm">.input()</code>, define
+          your logic with{" "}
+          <code className="bg-slate-200 dark:bg-slate-800 px-1 py-0.5 rounded text-sm">.handler()</code>, and
+          register it with{" "}
+          <code className="bg-slate-200 dark:bg-slate-800 px-1 py-0.5 rounded text-sm">.public()</code> or{" "}
+          <code className="bg-slate-200 dark:bg-slate-800 px-1 py-0.5 rounded text-sm">.internal()</code>.
+          The handler receives a fully-typed{" "}
+          <code className="bg-slate-200 dark:bg-slate-800 px-1 py-0.5 rounded text-sm">ctx</code>{" "}
+          (with <code className="bg-slate-200 dark:bg-slate-800 px-1 py-0.5 rounded text-sm">ctx.db</code> typed to your schema) and
+          a validated <code className="bg-slate-200 dark:bg-slate-800 px-1 py-0.5 rounded text-sm">input</code> object.
+        </p>
+      </Prose>
+      <CodeBlock source={basicsSource} region="listNumbers" title="convex/basics.ts - a simple query" file="convex/basics.ts" />
+      <CodeBlock source={basicsSource} region="addNumber" title="convex/basics.ts - a simple mutation" file="convex/basics.ts" />
+      <DemoCard title="Live demo">
+        <p className="text-sm">
+          Numbers:{" "}
+          {result
+            ? result.numbers.length > 0
+              ? result.numbers.join(", ")
+              : "(none yet - click the button)"
+            : "loading..."}
+        </p>
+        <div className="flex gap-2">
+          <Btn onClick={() => void addNumber({ value: Math.floor(Math.random() * 100) })}>
+            Add random number
+          </Btn>
+          <Btn variant="danger" onClick={() => void deleteAll({})}>
+            Clear all
+          </Btn>
+        </div>
+      </DemoCard>
     </section>
   );
 }

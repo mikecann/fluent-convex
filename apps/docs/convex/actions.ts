@@ -7,7 +7,7 @@
  */
 
 import { v } from "convex/values";
-import { convex } from "./lib";
+import { convex } from "./fluent";
 import { api } from "./_generated/api";
 import { withLogging } from "./middleware";
 

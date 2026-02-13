@@ -1,7 +1,7 @@
 import { Authenticated, Unauthenticated } from "convex/react";
 import { CodeBlock } from "../components/CodeBlock";
 import { AnchorHeading, Prose, DemoCard } from "../components/ui";
-import { middlewareSource, chainsSource, authedSource } from "../sources";
+import { middlewareSource, chainsSource, authedSource, fluentSource } from "../sources";
 import { TaskManager, SignInForm } from "../components/Auth";
 
 export function MiddlewareSection() {
@@ -44,7 +44,7 @@ export function MiddlewareSection() {
           to scope the required context to the minimal shape shared by all function types.
         </p>
       </Prose>
-      <CodeBlock source={middlewareSource} region="authMiddleware" title="Context-enrichment: authMiddleware" file="convex/middleware.ts" />
+      <CodeBlock source={fluentSource} region="authMiddleware" title="Context-enrichment: authMiddleware" file="convex/fluent.ts" />
       <CodeBlock source={middlewareSource} region="addTimestamp" title="Simple enrichment: addTimestamp" file="convex/middleware.ts" />
       <Prose>
         <p>
@@ -127,7 +127,7 @@ export function MiddlewareSection() {
           middleware definition works for all three function types.
         </p>
       </Prose>
-      <CodeBlock source={authedSource} region="reusableAuthChains" title="convex/authed.ts - defining reusable auth chains" file="convex/authed.ts" />
+      <CodeBlock source={fluentSource} region="reusableAuthChains" title="convex/fluent.ts - defining reusable auth chains" file="convex/fluent.ts" />
       <CodeBlock source={authedSource} region="listTasks" title="convex/authed.ts - a query using authedQuery" file="convex/authed.ts" />
       <CodeBlock source={authedSource} region="addTask" title="convex/authed.ts - a mutation using authedMutation" file="convex/authed.ts" />
       <CodeBlock source={authedSource} region="authedActionExample" title="convex/authed.ts - an action using authedAction" file="convex/authed.ts" />

@@ -16,7 +16,7 @@ npm install fluent-convex
 
 ## Step 2: Create a builder file
 
-Create `convex/builder.ts` as the single source of truth for your builder instance and any shared middleware or reusable chains.
+Create `convex/fluent.ts` as the single source of truth for your builder instance, auth middleware, and any shared reusable chains.
 
 ```ts
 import { createBuilder } from "fluent-convex";
@@ -29,7 +29,7 @@ export const convex = createBuilder<DataModel>();
 
 ## Step 3: Add auth middleware (if applicable)
 
-If the project uses authentication (e.g. `@convex-dev/auth`, `clerk`, or raw `ctx.auth.getUserIdentity()`), create a shared auth middleware in `builder.ts`.
+If the project uses authentication (e.g. `@convex-dev/auth`, `clerk`, or raw `ctx.auth.getUserIdentity()`), create a shared auth middleware in `fluent.ts`.
 
 ### Cross-function-type middleware with `$context`
 
@@ -83,7 +83,7 @@ const authMiddleware = convex
 
 ## Step 4: Create reusable chains
 
-Instead of exporting the middleware and writing `.use(authMiddleware)` everywhere, export pre-configured builder chains:
+Instead of exporting the middleware and writing `.use(authMiddleware)` everywhere, export pre-configured builder chains from `fluent.ts`:
 
 ```ts
 /** Pre-configured query builder with auth middleware applied. */
@@ -155,7 +155,7 @@ export const listItems = query({
 
 ```ts
 import { v } from "convex/values";
-import { authedQuery } from "./builder";
+import { authedQuery } from "./fluent";
 
 export const listItems = authedQuery
   .input({ limit: v.optional(v.number()) })
@@ -192,9 +192,9 @@ If you need the soft-fail pattern, don't use the authed chain — use the base `
 
 **Important:** When converting functions that previously returned empty defaults for unauthenticated users (e.g. `return []` or `return { count: 0 }`), switching to the `authMiddleware` changes the behavior from "silent empty response" to "throws an error." Make sure the frontend handles this appropriately (e.g. the component is only rendered inside an `<Authenticated>` gate).
 
-## Complete builder.ts template
+## Complete fluent.ts template
 
-Here's a complete `builder.ts` for a project using `@convex-dev/auth`:
+Here's a complete `fluent.ts` for a project using `@convex-dev/auth`:
 
 ```ts
 import { createBuilder } from "fluent-convex";
@@ -225,7 +225,7 @@ export const authedAction = convex.action().use(authMiddleware);
 ## Checklist
 
 - [ ] Install `fluent-convex`
-- [ ] Create `convex/builder.ts` with `createBuilder<DataModel>()`
+- [ ] Create `convex/fluent.ts` with `createBuilder<DataModel>()`
 - [ ] Add auth middleware if the project uses authentication
 - [ ] Export reusable chains (`authedQuery`, `authedMutation`, `authedAction`)
 - [ ] Convert each `query()` / `internalQuery()` / `mutation()` / `internalMutation()` / `action()` / `internalAction()`

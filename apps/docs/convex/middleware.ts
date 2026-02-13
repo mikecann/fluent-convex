@@ -6,35 +6,13 @@
  *
  *   1. Context-enrichment - adds new properties to the context
  *   2. Onion (wrap) - runs code before AND after the handler
+ *
+ * The authMiddleware is defined in fluent.ts alongside the builder.
+ * This file holds additional middleware examples.
  */
 
-import { convex } from "./lib";
-import type { Auth } from "convex/server";
-
-// ---------------------------------------------------------------------------
-// #region authMiddleware
-// Context-enrichment middleware: checks authentication and adds `user`
-// to the context. Works with queries, mutations, and actions because
-// we scope the required context to the minimal `{ auth: Auth }` shape
-// that all Convex function types share.
-export const authMiddleware = convex
-  .$context<{ auth: Auth }>()
-  .createMiddleware(async (context, next) => {
-    const identity = await context.auth.getUserIdentity();
-    if (!identity) {
-      throw new Error("Unauthorized");
-    }
-
-    // Everything downstream now has `context.user` available
-    return next({
-      ...context,
-      user: {
-        id: identity.subject,
-        name: identity.name ?? "Unknown",
-      },
-    });
-  });
-// #endregion
+import { convex } from "./fluent";
+export { authMiddleware } from "./fluent";
 
 // ---------------------------------------------------------------------------
 // #region addTimestamp

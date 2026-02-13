@@ -13,7 +13,7 @@
  */
 
 import { v } from "convex/values";
-import { convex } from "./lib";
+import { convex } from "./fluent";
 import { authMiddleware, addTimestamp, withLogging } from "./middleware";
 
 // ---------------------------------------------------------------------------

@@ -8,19 +8,8 @@
  */
 
 import { v } from "convex/values";
-import { convex } from "./lib";
-import { authMiddleware } from "./middleware";
+import { authedQuery, authedMutation, authedAction } from "./fluent";
 import { api } from "./_generated/api";
-
-// #region reusableAuthChains
-// Reusable partial chains - pre-configure middleware so downstream
-// consumers don't need to repeat `.use(authMiddleware)` everywhere.
-// Because authMiddleware uses $context<{ auth: Auth }>, it works
-// with all three function types - queries, mutations, AND actions.
-const authedQuery = convex.query().use(authMiddleware);
-const authedMutation = convex.mutation().use(authMiddleware);
-const authedAction = convex.action().use(authMiddleware);
-// #endregion
 
 // #region listTasks
 export const listTasks = authedQuery

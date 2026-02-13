@@ -13,7 +13,7 @@
 import { v } from "convex/values";
 import { z } from "zod";
 import { WithZod } from "fluent-convex/zod";
-import { convex } from "./lib";
+import { convex } from "./fluent";
 
 // ---------------------------------------------------------------------------
 // 1. Property validators (the simplest form)

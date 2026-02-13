@@ -8,7 +8,6 @@ type NavItem = NavLink | NavSection;
 const NAV_ITEMS: NavItem[] = [
   { kind: "section", label: "Guide" },
   { kind: "link", route: routes.gettingStarted, routeName: "gettingStarted", label: "Getting Started" },
-  { kind: "link", route: routes.basics, routeName: "basics", label: "Basics" },
   { kind: "link", route: routes.validation, routeName: "validation", label: "Validation" },
   { kind: "link", route: routes.reusableChains, routeName: "reusableChains", label: "Reusable Chains" },
   { kind: "link", route: routes.middleware, routeName: "middleware", label: "Middleware" },

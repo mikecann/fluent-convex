@@ -21,7 +21,7 @@ import {
   type FunctionType,
   type GenericDataModel,
 } from "fluent-convex";
-import { convex } from "./lib";
+import { convex } from "./fluent";
 
 // #region TimedBuilder
 export class TimedBuilder<

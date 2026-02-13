@@ -7,7 +7,7 @@
  */
 
 import { v } from "convex/values";
-import { convex } from "./lib";
+import { convex } from "./fluent";
 
 // #region listNumbers
 export const listNumbers = convex
