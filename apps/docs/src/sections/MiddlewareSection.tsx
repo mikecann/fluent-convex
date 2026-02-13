@@ -42,8 +42,8 @@ export function MiddlewareSection() {
           to scope the required context to the minimal shape shared by all function types.
         </p>
       </Prose>
-      <CodeBlock source={middlewareSource} region="authMiddleware" title="Context-enrichment: authMiddleware" />
-      <CodeBlock source={middlewareSource} region="addTimestamp" title="Simple enrichment: addTimestamp" />
+      <CodeBlock source={middlewareSource} region="authMiddleware" title="Context-enrichment: authMiddleware" file="convex/middleware.ts" />
+      <CodeBlock source={middlewareSource} region="addTimestamp" title="Simple enrichment: addTimestamp" file="convex/middleware.ts" />
       <Prose>
         <p>
           Onion middleware is especially powerful. Because it wraps the handler, it can measure
@@ -53,7 +53,7 @@ export function MiddlewareSection() {
           instance:
         </p>
       </Prose>
-      <CodeBlock source={middlewareSource} region="withLogging" title="Onion middleware: withLogging(name)" />
+      <CodeBlock source={middlewareSource} region="withLogging" title="Onion middleware: withLogging(name)" file="convex/middleware.ts" />
 
       <h3 className="text-xl font-semibold mt-4">Applying middleware with .use()</h3>
       <Prose>
@@ -66,7 +66,7 @@ export function MiddlewareSection() {
           combined context with everything fully typed.
         </p>
       </Prose>
-      <CodeBlock source={chainsSource} region="usingMiddleware" title="convex/chains.ts — single and stacked .use() calls" />
+      <CodeBlock source={chainsSource} region="usingMiddleware" title="convex/chains.ts — single and stacked .use() calls" file="convex/chains.ts" />
     </section>
   );
 }

@@ -35,7 +35,7 @@ export function ValidatorsSection() {
             </p>
           </Prose>
         </div>
-        <CodeBlock source={validatorsSource} region="propertyValidators" title="Property validators" />
+        <CodeBlock source={validatorsSource} region="propertyValidators" title="Property validators" file="convex/validators.ts" />
 
         <div>
           <h3 className="text-lg font-semibold mb-2">2. Object validators with .returns()</h3>
@@ -50,7 +50,7 @@ export function ValidatorsSection() {
             </p>
           </Prose>
         </div>
-        <CodeBlock source={validatorsSource} region="objectValidators" title="Object validators + .returns()" />
+        <CodeBlock source={validatorsSource} region="objectValidators" title="Object validators + .returns()" file="convex/validators.ts" />
 
         <div>
           <h3 className="text-lg font-semibold mb-2">3. Zod schemas via .extend(WithZod)</h3>
@@ -67,7 +67,7 @@ export function ValidatorsSection() {
             </p>
           </Prose>
         </div>
-        <CodeBlock source={validatorsSource} region="zodValidation" title="Zod schemas via .extend(WithZod)" />
+        <CodeBlock source={validatorsSource} region="zodValidation" title="Zod schemas via .extend(WithZod)" file="convex/validators.ts" />
       </div>
 
       <DemoCard title="Live demo — all three return the same data">

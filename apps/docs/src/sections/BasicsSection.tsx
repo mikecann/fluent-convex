@@ -29,12 +29,11 @@ export function BasicsSection() {
         <p>
           The handler receives a fully-typed <code className="bg-slate-200 dark:bg-slate-800 px-1 py-0.5 rounded text-sm">ctx</code>{" "}
           (with <code className="bg-slate-200 dark:bg-slate-800 px-1 py-0.5 rounded text-sm">ctx.db</code> typed to your schema) and
-          a validated <code className="bg-slate-200 dark:bg-slate-800 px-1 py-0.5 rounded text-sm">input</code> object. No more
-          manual destructuring from <code className="bg-slate-200 dark:bg-slate-800 px-1 py-0.5 rounded text-sm">args</code>.
+          a validated <code className="bg-slate-200 dark:bg-slate-800 px-1 py-0.5 rounded text-sm">input</code> object.
         </p>
       </Prose>
-      <CodeBlock source={basicsSource} region="listNumbers" title="convex/basics.ts — a simple query" />
-      <CodeBlock source={basicsSource} region="addNumber" title="convex/basics.ts — a simple mutation" />
+      <CodeBlock source={basicsSource} region="listNumbers" title="convex/basics.ts — a simple query" file="convex/basics.ts" />
+      <CodeBlock source={basicsSource} region="addNumber" title="convex/basics.ts — a simple mutation" file="convex/basics.ts" />
       <DemoCard title="Live demo">
         <p className="text-sm">
           Numbers:{" "}

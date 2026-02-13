@@ -20,6 +20,27 @@ export const Content = memo(function Content({
     callbackRef.current = onSectionChange;
   }, [onSectionChange]);
 
+  // Scroll to the target section on initial load or when the hash changes.
+  // Because <main> is the scroll container (overflow-y-auto), the browser's
+  // native #hash scrolling targets the document and misses our container.
+  useEffect(() => {
+    function scrollToHash() {
+      const hash = window.location.hash.replace("#", "");
+      if (!hash) return;
+      // Small delay to let sections render before measuring
+      requestAnimationFrame(() => {
+        const el = document.getElementById(hash);
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth" });
+        }
+      });
+    }
+
+    scrollToHash();
+    window.addEventListener("hashchange", scrollToHash);
+    return () => window.removeEventListener("hashchange", scrollToHash);
+  }, []);
+
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {

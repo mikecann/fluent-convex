@@ -66,7 +66,7 @@ export function ZodSection() {
           number or zero in the live demo — the server will reject it with a Zod validation error.
         </p>
       </Prose>
-      <CodeBlock source={validatorsSource} region="zodRefinements" title="Zod refinements (.positive(), .min(), .max())" />
+      <CodeBlock source={validatorsSource} region="zodRefinements" title="Zod refinements (.positive(), .min(), .max())" file="convex/validators.ts" />
 
       <DemoCard title="Live demo — try a negative number">
         <div className="flex gap-2 items-end flex-wrap">
@@ -110,7 +110,7 @@ export function ZodSection() {
           checks the handler&apos;s output before sending it to the client.
         </p>
       </Prose>
-      <CodeBlock source={validatorsSource} region="zodStats" title="Complex return types with Zod" />
+      <CodeBlock source={validatorsSource} region="zodStats" title="Complex return types with Zod" file="convex/validators.ts" />
       {stats && (
         <DemoCard title="Live stats result">
           <p className="text-sm font-mono">

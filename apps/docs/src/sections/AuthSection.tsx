@@ -24,7 +24,7 @@ export function AuthSection() {
           available — fully typed, no casting needed.
         </p>
       </Prose>
-      <CodeBlock source={authedSource} region="reusableAuthChains" title="convex/authed.ts — defining reusable auth chains" />
+      <CodeBlock source={authedSource} region="reusableAuthChains" title="convex/authed.ts — defining reusable auth chains" file="convex/authed.ts" />
       <Prose>
         <p>
           Building functions from these chains is clean and minimal. Notice how{" "}
@@ -33,8 +33,8 @@ export function AuthSection() {
           added it to the context type.
         </p>
       </Prose>
-      <CodeBlock source={authedSource} region="listTasks" title="convex/authed.ts — a query using authedQuery" />
-      <CodeBlock source={authedSource} region="addTask" title="convex/authed.ts — a mutation using authedMutation" />
+      <CodeBlock source={authedSource} region="listTasks" title="convex/authed.ts — a query using authedQuery" file="convex/authed.ts" />
+      <CodeBlock source={authedSource} region="addTask" title="convex/authed.ts — a mutation using authedMutation" file="convex/authed.ts" />
       <DemoCard title="Live demo — sign in to manage tasks">
         <Authenticated>
           <TaskManager />

@@ -34,7 +34,7 @@ export function ReusableChainsSection() {
           middleware added on top. Same logic, two different access patterns.
         </p>
       </Prose>
-      <CodeBlock source={chainsSource} region="reusableBase" title="convex/chains.ts — define once, register multiple ways" />
+      <CodeBlock source={chainsSource} region="reusableBase" title="convex/chains.ts — define once, register multiple ways" file="convex/chains.ts" />
 
       <h3 className="text-xl font-semibold">Stacking middleware on a callable</h3>
       <Prose>
@@ -44,7 +44,7 @@ export function ReusableChainsSection() {
           returns a new builder, so the original callable is unchanged.
         </p>
       </Prose>
-      <CodeBlock source={chainsSource} region="stackedMiddleware" title="Stacking middleware on a callable" />
+      <CodeBlock source={chainsSource} region="stackedMiddleware" title="Stacking middleware on a callable" file="convex/chains.ts" />
 
       <h3 className="text-xl font-semibold">Middleware after handler</h3>
       <Prose>
@@ -58,7 +58,7 @@ export function ReusableChainsSection() {
           functionality without restructuring your code.
         </p>
       </Prose>
-      <CodeBlock source={chainsSource} region="middlewareAfterHandler" title="Middleware AFTER handler" />
+      <CodeBlock source={chainsSource} region="middlewareAfterHandler" title="Middleware AFTER handler" file="convex/chains.ts" />
 
       <DemoCard title="Live demo">
         <div className="grid grid-cols-2 gap-4 text-sm">

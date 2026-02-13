@@ -32,8 +32,8 @@ export function ActionsSection() {
           HTTP requests.
         </p>
       </Prose>
-      <CodeBlock source={actionsSource} region="seedNumbers" title="convex/actions.ts — action with logging middleware" />
-      <CodeBlock source={actionsSource} region="getSnapshot" title="convex/actions.ts — action calling a query" />
+      <CodeBlock source={actionsSource} region="seedNumbers" title="convex/actions.ts — action with logging middleware" file="convex/actions.ts" />
+      <CodeBlock source={actionsSource} region="getSnapshot" title="convex/actions.ts — action calling a query" file="convex/actions.ts" />
       <DemoCard title="Live demo">
         <div className="flex gap-2 items-end flex-wrap">
           <div className="flex flex-col gap-1">
