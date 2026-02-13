@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, memo } from "react";
 import {
   Authenticated,
   Unauthenticated,
@@ -45,13 +45,14 @@ const NAV_SECTIONS = [
 
 export default function App() {
   const [activeSection, setActiveSection] = useState<string>("getting-started");
+  const handleSectionChange = useCallback((id: string) => setActiveSection(id), []);
 
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
       <div className="flex flex-1">
         <Sidebar activeSection={activeSection} />
-        <Content onSectionChange={setActiveSection} />
+        <Content onSectionChange={handleSectionChange} />
       </div>
     </div>
   );
@@ -148,15 +149,19 @@ function Sidebar({ activeSection }: { activeSection: string }) {
 // Content — scrollable main area with intersection observer for active section
 // ---------------------------------------------------------------------------
 
-function Content({ onSectionChange }: { onSectionChange: (id: string) => void }) {
+const Content = memo(function Content({ onSectionChange }: { onSectionChange: (id: string) => void }) {
   const contentRef = useRef<HTMLDivElement>(null);
+  const callbackRef = useRef(onSectionChange);
+  useEffect(() => {
+    callbackRef.current = onSectionChange;
+  }, [onSectionChange]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
           if (entry.isIntersecting) {
-            onSectionChange(entry.target.id);
+            callbackRef.current(entry.target.id);
           }
         }
       },
@@ -166,7 +171,7 @@ function Content({ onSectionChange }: { onSectionChange: (id: string) => void })
     const sections = contentRef.current?.querySelectorAll("section[id]");
     sections?.forEach((s) => observer.observe(s));
     return () => observer.disconnect();
-  }, [onSectionChange]);
+  }, []);
 
   return (
     <main ref={contentRef} className="flex-1 min-w-0 overflow-y-auto">
@@ -193,7 +198,7 @@ function Content({ onSectionChange }: { onSectionChange: (id: string) => void })
       </div>
     </main>
   );
-}
+});
 
 // ---------------------------------------------------------------------------
 // Shared UI components
