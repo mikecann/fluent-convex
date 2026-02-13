@@ -31,10 +31,17 @@ jobs:
       - name: Build core library
         run: npm run build --workspace=packages/fluent-convex
 
-      # Deploys Convex backend + builds frontend + uploads static files
-      # Uses CONVEX_DEPLOY_KEY to authenticate with the production deployment
-      - name: Deploy Convex backend + static site
+      # Deploy Convex backend first so _generated types are up to date
+      # before the frontend tsc build runs
+      - name: Deploy Convex backend
         working-directory: apps/docs
         env:
           CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
-        run: npx @convex-dev/self-hosting deploy
+        run: npx convex deploy
+
+      # Build frontend and upload static files to Convex storage
+      - name: Build and upload static site
+        working-directory: apps/docs
+        env:
+          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
+        run: npx @convex-dev/self-hosting upload --build --prod
