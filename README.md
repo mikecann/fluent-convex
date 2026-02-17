@@ -104,7 +104,7 @@ fluent-convex supports three flavors of input validation through the same `.inpu
 There are two main middleware patterns:
 
 - **Context-enrichment** -- adds new properties to the context (e.g. `ctx.user`)
-- **Onion (wrap)** -- runs code before *and* after the handler (e.g. timing, error handling)
+- **Onion (wrap)** -- runs code before _and_ after the handler (e.g. timing, error handling)
 
 ### Cross-function-type middleware
 
@@ -126,16 +126,19 @@ const authMiddleware = convex
 
 // All of these work:
 const protectedQuery = convex.query().use(authMiddleware).handler(/* ... */);
-const protectedMutation = convex.mutation().use(authMiddleware).handler(/* ... */);
+const protectedMutation = convex
+  .mutation()
+  .use(authMiddleware)
+  .handler(/* ... */);
 const protectedAction = convex.action().use(authMiddleware).handler(/* ... */);
 ```
 
 The three approaches, and when to use each:
 
-| Pattern | Input context | Use when |
-|---------|--------------|----------|
-| `convex.query().createMiddleware(fn)` | `QueryCtx` (has `db`) | Middleware that reads the database |
-| `convex.createMiddleware(fn)` | `EmptyObject` | Middleware that needs no context at all |
+| Pattern                                                  | Input context            | Use when                                                               |
+| -------------------------------------------------------- | ------------------------ | ---------------------------------------------------------------------- |
+| `convex.query().createMiddleware(fn)`                    | `QueryCtx` (has `db`)    | Middleware that reads the database                                     |
+| `convex.createMiddleware(fn)`                            | `EmptyObject`            | Middleware that needs no context at all                                |
 | `convex.$context<{ auth: Auth }>().createMiddleware(fn)` | Exactly `{ auth: Auth }` | Middleware that needs specific shared properties across function types |
 
 ## Reusable Chains & Callables
@@ -208,7 +211,7 @@ export const listNumbers = convex
   .input(
     z.object({
       count: z.number().int().min(1).max(100), // Refinements enforced at runtime!
-    })
+    }),
   )
   .returns(z.object({ numbers: z.array(z.number()) }))
   .handler(async (context, input) => {
@@ -219,6 +222,7 @@ export const listNumbers = convex
 ```
 
 Key features:
+
 - **Full runtime validation** - Zod refinements (`.min()`, `.max()`, `.email()`, `.regex()`, etc.) are enforced server-side. Args are validated before the handler runs; return values after.
 - **Structural conversion** - Zod schemas are automatically converted to Convex validators for Convex's built-in validation.
 - **Composable** - `.extend(WithZod)` preserves the `WithZod` type through `.use()`, `.input()`, and `.returns()` chains.
@@ -389,6 +393,7 @@ export const doubleNumber = getDouble.public();
 ### Circular types when calling `api.*` in the same file
 
 When a function calls other functions via `api.*` in the same file, and those functions don't have explicit `.returns()` validators, TypeScript may report circular initializer errors (TS7022). This is a standard Convex/TypeScript limitation, not specific to fluent-convex. Workarounds:
+
 1. Add `.returns()` to the **called** functions -- this gives them explicit return types, breaking the cycle
 2. Move the calling function to a separate file
 3. Use `internal.*` from a different module
@@ -442,4 +447,4 @@ If you have an existing Convex project and want to adopt fluent-convex, see **[M
 
 ## Credits
 
-Borrowed heavily from [oRPC](https://orpc.unnoq.com/learn-and-contribute/overview) and helped out by AI.
+Borrowed heavily from [oRPC](https://orpc.unnoq.com/learn-and-contribute/overview) and helped out by AI..
