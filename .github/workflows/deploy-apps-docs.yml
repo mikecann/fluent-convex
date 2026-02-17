@@ -18,7 +18,10 @@ jobs:
         with:
           node-version: "20"
           cache: npm
-      - run: npm ci
+      - name: Install dependencies
+        run: |
+          rm -rf node_modules package-lock.json
+          npm install
 
       # Build all workspace packages so local dependencies are available.
       - name: Build workspace packages
