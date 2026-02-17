@@ -18,10 +18,7 @@ jobs:
         with:
           node-version: "20"
           cache: npm
-      - name: Install dependencies
-        run: |
-          rm -rf node_modules package-lock.json
-          npm install
+      - run: npm ci
 
       # Build all workspace packages so local dependencies are available.
       - name: Build workspace packages
@@ -49,4 +46,5 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           wranglerVersion: "4"
+
           workingDirectory: apps/docs
