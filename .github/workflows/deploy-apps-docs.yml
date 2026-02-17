@@ -22,6 +22,10 @@ jobs:
           cache: npm
       - run: npm ci
 
+      # Build all workspace packages so local dependencies are available.
+      - name: Build workspace packages
+        run: npm run build
+
       # Deploy Convex backend and build the frontend in one step.
       # convex deploy pushes backend functions, then sets VITE_CONVEX_URL
       # (and NEXT_PUBLIC_CONVEX_URL) in the environment before running the
