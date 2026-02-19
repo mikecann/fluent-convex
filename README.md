@@ -2,11 +2,11 @@
 
 # Fluent Convex
 
-[![Is this the best way to write Convex? Does anyone care?](https://thumbs.video-to-markdown.com/e943cc42.jpg)](https://youtu.be/oFqWtLBSgk8)
-
 A fluent builder for Convex functions with composable middleware, reusable chains, and plugin support. Inspired by [oRPC](https://orpc.unnoq.com/).
 
 **[Live Docs & Interactive Showcase](https://friendly-zebra-716.convex.site)** — every feature with live demos and real source code.
+
+[![Is this the best way to write Convex? Does anyone care?](https://thumbs.video-to-markdown.com/e943cc42.jpg)](https://youtu.be/oFqWtLBSgk8)
 
 ## Features
 
