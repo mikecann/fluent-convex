@@ -9,6 +9,7 @@
     "dev:backend": "convex dev",
     "predev": "convex dev --until-success && convex dev --once --run-sh \"node setup.mjs --once\" && convex dashboard",
     "build": "tsc -b && vite build",
+    "build:labs": "tsc -b && vite build --base=/fluent-convex/ --outDir=dist/fluent-convex",
     "typecheck": "tsc -b",
     "lint": "eslint .",
     "preview": "vite preview",

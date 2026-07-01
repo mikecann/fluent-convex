@@ -1,0 +1,12 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "installCommand": "npm ci && npm install --no-save @rollup/rollup-linux-x64-gnu@$(node -p \"require('rollup/package.json').version\")",
+  "buildCommand": "npm run build && npm run build:labs --workspace=apps/docs",
+  "outputDirectory": "apps/docs/dist",
+  "rewrites": [
+    {
+      "source": "/fluent-convex/:path*",
+      "destination": "/fluent-convex/index.html"
+    }
+  ]
+}
