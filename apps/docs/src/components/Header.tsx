@@ -20,7 +20,11 @@ export function Header({ onToggleSidebar }: { onToggleSidebar: () => void }) {
             {...routes.gettingStarted().link}
             className="flex items-center gap-2 font-bold text-lg tracking-tight hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
           >
-            <img src="/logo.png" alt="fluent-convex logo" className="h-6 w-6" />
+            <img
+              src={`${import.meta.env.BASE_URL}logo.png`}
+              alt="fluent-convex logo"
+              className="h-6 w-6"
+            />
             fluent-convex
           </a>
           <span className="text-xs text-slate-400 dark:text-slate-500 hidden sm:inline">

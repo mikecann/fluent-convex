@@ -12,7 +12,11 @@ export function GettingStartedSection() {
   return (
     <section id="getting-started" className="flex flex-col gap-6">
       <div>
-        <img src="/logo.png" alt="fluent-convex logo" className="h-20 w-20 mb-4" />
+        <img
+          src={`${import.meta.env.BASE_URL}logo.png`}
+          alt="fluent-convex logo"
+          className="h-20 w-20 mb-4"
+        />
         <h1 className="text-4xl font-extrabold tracking-tight">fluent-convex</h1>
         <p className="text-lg text-slate-500 dark:text-slate-400 mt-2">
           A fluent API builder for Convex functions with middleware support.
