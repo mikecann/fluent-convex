@@ -12,6 +12,8 @@ import { api } from "./_generated/api";
 import { withLogging } from "./middleware";
 
 // #region seedNumbers
+const MAX_SEED_COUNT = 20; // this action is public, so cap each call
+
 export const seedNumbers = convex
   .action()
   .use(withLogging("seedNumbers"))
@@ -22,15 +24,19 @@ export const seedNumbers = convex
   })
   .returns(v.object({ seeded: v.number() }))
   .handler(async (ctx, input) => {
+    const count = Math.min(
+      Math.max(Math.floor(input.count) || 0, 0),
+      MAX_SEED_COUNT
+    );
     const min = input.min ?? 1;
     const max = input.max ?? 100;
 
-    for (let i = 0; i < input.count; i++) {
+    for (let i = 0; i < count; i++) {
       const value = Math.floor(Math.random() * (max - min + 1)) + min;
       await ctx.runMutation(api.basics.addNumber, { value });
     }
 
-    return { seeded: input.count };
+    return { seeded: count };
   })
   .public();
 // #endregion

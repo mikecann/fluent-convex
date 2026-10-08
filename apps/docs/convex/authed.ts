@@ -10,6 +10,7 @@
 import { v } from "convex/values";
 import { authedQuery, authedMutation, authedAction } from "./fluent";
 import { api } from "./_generated/api";
+import { checkDemoRateLimit } from "./seed";
 
 // #region listTasks
 export const listTasks = authedQuery
@@ -41,6 +42,7 @@ export const addTask = authedMutation
     ),
   })
   .handler(async (ctx, input) => {
+    await checkDemoRateLimit(ctx, "tasks");
     const id = await ctx.db.insert("tasks", {
       title: input.title,
       completed: false,

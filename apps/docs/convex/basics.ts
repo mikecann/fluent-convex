@@ -8,6 +8,7 @@
 
 import { v } from "convex/values";
 import { convex } from "./fluent";
+import { checkDemoRateLimit } from "./seed";
 
 // #region listNumbers
 export const listNumbers = convex
@@ -30,6 +31,7 @@ export const addNumber = convex
   .mutation()
   .input({ value: v.number() })
   .handler(async (ctx, input) => {
+    await checkDemoRateLimit(ctx, "numbers");
     const id = await ctx.db.insert("numbers", { value: input.value });
     return id;
   })
