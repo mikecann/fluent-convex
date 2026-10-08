@@ -1,3 +1,5 @@
+import { ConvexError } from "convex/values";
+
 export function AnchorHeading({
   id,
   children,
@@ -111,5 +113,21 @@ export function PriorityBadge({ priority }: { priority: string }) {
     <span className={`text-xs px-1.5 py-0.5 rounded ${colors[priority] ?? ""}`}>
       {priority}
     </span>
+  );
+}
+
+/** Shows why a live demo call failed, e.g. when the demo is busy. */
+export function ErrorNote({ error }: { error: unknown }) {
+  if (!error) return null;
+  const message =
+    error instanceof ConvexError
+      ? String(error.data)
+      : error instanceof Error
+        ? error.message
+        : "Something went wrong";
+  return (
+    <p className="text-sm text-red-500 bg-red-500/10 border border-red-500/30 rounded px-3 py-2">
+      {message}
+    </p>
   );
 }

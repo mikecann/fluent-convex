@@ -31,7 +31,7 @@ export const addNumber = convex
   .mutation()
   .input({ value: v.number() })
   .handler(async (ctx, input) => {
-    await checkDemoRateLimit(ctx, "numbers");
+    await checkDemoRateLimit(ctx, "numbers"); // the demo is public, so cap writes
     const id = await ctx.db.insert("numbers", { value: input.value });
     return id;
   })

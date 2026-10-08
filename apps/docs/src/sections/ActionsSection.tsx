@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useAction } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { CodeBlock } from "../components/CodeBlock";
-import { Prose, DemoCard, Badge, Btn } from "../components/ui";
+import { Prose, DemoCard, Badge, Btn, ErrorNote } from "../components/ui";
 import { actionsSource } from "../sources";
 
 export function ActionsSection() {
@@ -11,6 +11,7 @@ export function ActionsSection() {
   const [seedCount, setSeedCount] = useState("5");
   const [snapshot, setSnapshot] = useState<{ numberCount: number; numbers: number[] } | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<unknown>(null);
 
   return (
     <section id="actions" className="flex flex-col gap-6">
@@ -37,9 +38,11 @@ export function ActionsSection() {
       <DemoCard title="Live demo">
         <div className="flex gap-2 items-end flex-wrap">
           <div className="flex flex-col gap-1">
-            <label className="text-xs text-slate-500">Numbers to seed</label>
+            <label className="text-xs text-slate-500">Numbers to seed (max 20)</label>
             <input
               type="number"
+              min={0}
+              max={20}
               value={seedCount}
               onChange={(e) => setSeedCount(e.target.value)}
               className="bg-light dark:bg-dark border border-slate-300 dark:border-slate-700 rounded px-3 py-1.5 text-sm w-24"
@@ -49,9 +52,10 @@ export function ActionsSection() {
             disabled={loading}
             onClick={() => {
               setLoading(true);
-              void seedNumbers({ count: Number(seedCount) }).finally(() =>
-                setLoading(false)
-              );
+              setError(null);
+              void seedNumbers({ count: Number(seedCount) })
+                .catch(setError)
+                .finally(() => setLoading(false));
             }}
           >
             {loading ? "Seeding..." : "Seed numbers"}
@@ -69,6 +73,7 @@ export function ActionsSection() {
             Get snapshot
           </Btn>
         </div>
+        <ErrorNote error={error} />
         {snapshot && (
           <div className="text-sm">
             <p><Badge>{snapshot.numberCount} numbers</Badge></p>

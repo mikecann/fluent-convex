@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { api } from "../../convex/_generated/api";
-import { Badge, Btn, PriorityBadge } from "./ui";
+import { Badge, Btn, ErrorNote, PriorityBadge } from "./ui";
 
 export function TaskManager() {
   const data = useQuery(api.authed.listTasks, {});
@@ -11,8 +11,15 @@ export function TaskManager() {
   const deleteTask = useMutation(api.authed.deleteTask);
   const [title, setTitle] = useState("");
   const [priority, setPriority] = useState<"low" | "medium" | "high">("medium");
+  const [error, setError] = useState<unknown>(null);
 
   if (!data) return <p className="text-sm">Loading tasks...</p>;
+
+  const submit = () => {
+    setError(null);
+    void addTask({ title: title.trim(), priority }).catch(setError);
+    setTitle("");
+  };
 
   return (
     <div className="flex flex-col gap-4">
@@ -26,13 +33,11 @@ export function TaskManager() {
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
+            maxLength={200}
             className="bg-light dark:bg-dark border border-slate-300 dark:border-slate-700 rounded px-3 py-1.5 text-sm"
             placeholder="What needs doing?"
             onKeyDown={(e) => {
-              if (e.key === "Enter" && title.trim()) {
-                void addTask({ title: title.trim(), priority });
-                setTitle("");
-              }
+              if (e.key === "Enter" && title.trim()) submit();
             }}
           />
         </div>
@@ -48,16 +53,11 @@ export function TaskManager() {
             <option value="high">High</option>
           </select>
         </div>
-        <Btn
-          disabled={!title.trim()}
-          onClick={() => {
-            void addTask({ title: title.trim(), priority });
-            setTitle("");
-          }}
-        >
+        <Btn disabled={!title.trim()} onClick={submit}>
           Add
         </Btn>
       </div>
+      <ErrorNote error={error} />
       {data.tasks.length === 0 ? (
         <p className="text-sm text-slate-500">No tasks yet. Add one above!</p>
       ) : (

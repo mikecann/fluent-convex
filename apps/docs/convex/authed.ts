@@ -7,7 +7,7 @@
  * requires authentication and has `context.user` available.
  */
 
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import { authedQuery, authedMutation, authedAction } from "./fluent";
 import { api } from "./_generated/api";
 import { checkDemoRateLimit } from "./seed";
@@ -42,7 +42,10 @@ export const addTask = authedMutation
     ),
   })
   .handler(async (ctx, input) => {
-    await checkDemoRateLimit(ctx, "tasks");
+    if (input.title.length < 1 || input.title.length > 200) {
+      throw new ConvexError("Task titles must be 1-200 characters");
+    }
+    await checkDemoRateLimit(ctx, "tasks"); // the demo is public, so cap writes
     const id = await ctx.db.insert("tasks", {
       title: input.title,
       completed: false,

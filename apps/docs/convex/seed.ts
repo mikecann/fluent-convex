@@ -5,6 +5,7 @@
  *   - an hourly cron clears the numbers and tasks tables, then inserts a
  *     curated set of example data
  *   - checkDemoRateLimit caps how fast the demos can add rows in between
+ *   - addTask caps title length, so rows stay small
  */
 
 import { ConvexError } from "convex/values";
@@ -28,44 +29,52 @@ const SEED_TASKS: Array<{
   { title: "Write reusable auth chains", completed: false, priority: "medium" },
 ];
 
-// A single mutation can only write so many documents, so the reset deletes
-// at most this many rows per table, then schedules itself again until the
-// tables are empty.
-const DELETE_BATCH_SIZE = 500;
+// A single mutation can only read and write so much, so each table is
+// cleared in batches, scheduling another run until it's empty. Task batches
+// are small so a run still fits under the read limit even if rows are big.
+const NUMBERS_BATCH_SIZE = 500;
+const TASKS_BATCH_SIZE = 10;
 
 export const resetDemoData = internalMutation({
   args: {},
   handler: async (ctx) => {
-    // --- Clear numbers ---
-    const numbers = await ctx.db.query("numbers").take(DELETE_BATCH_SIZE);
-    for (const doc of numbers) {
+    // Each table resets in its own transactions, so one can't hold up the other
+    await ctx.scheduler.runAfter(0, internal.seed.resetNumbers, {});
+    await ctx.scheduler.runAfter(0, internal.seed.resetTasks, {});
+  },
+});
+
+export const resetNumbers = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const batch = await ctx.db.query("numbers").take(NUMBERS_BATCH_SIZE);
+    for (const doc of batch) {
       await ctx.db.delete("numbers", doc._id);
     }
-
-    // --- Clear tasks ---
-    const tasks = await ctx.db.query("tasks").take(DELETE_BATCH_SIZE);
-    for (const doc of tasks) {
-      await ctx.db.delete("tasks", doc._id);
-    }
-
-    // --- More left? Carry on in a new transaction ---
-    if (
-      numbers.length === DELETE_BATCH_SIZE ||
-      tasks.length === DELETE_BATCH_SIZE
-    ) {
-      console.log(
-        `[seed] Deleted ${numbers.length} numbers, ${tasks.length} tasks, continuing...`
-      );
-      await ctx.scheduler.runAfter(0, internal.seed.resetDemoData, {});
+    if (batch.length === NUMBERS_BATCH_SIZE) {
+      await ctx.scheduler.runAfter(0, internal.seed.resetNumbers, {});
       return;
     }
 
-    // --- Seed numbers ---
     for (const value of SEED_NUMBERS) {
       await ctx.db.insert("numbers", { value });
     }
+    console.log(`[seed] Reset numbers to ${SEED_NUMBERS.length} examples`);
+  },
+});
 
-    // --- Seed tasks ---
+export const resetTasks = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const batch = await ctx.db.query("tasks").take(TASKS_BATCH_SIZE);
+    for (const doc of batch) {
+      await ctx.db.delete("tasks", doc._id);
+    }
+    if (batch.length === TASKS_BATCH_SIZE) {
+      await ctx.scheduler.runAfter(0, internal.seed.resetTasks, {});
+      return;
+    }
+
     for (const task of SEED_TASKS) {
       await ctx.db.insert("tasks", {
         title: task.title,
@@ -74,10 +83,7 @@ export const resetDemoData = internalMutation({
         createdBy: "Demo User",
       });
     }
-
-    console.log(
-      `[seed] Reset demo data: ${SEED_NUMBERS.length} numbers, ${SEED_TASKS.length} tasks`
-    );
+    console.log(`[seed] Reset tasks to ${SEED_TASKS.length} examples`);
   },
 });
 

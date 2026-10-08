@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery } from "convex/react";
+import { ConvexError } from "convex/values";
 import { api } from "../../convex/_generated/api";
 import { CodeBlock } from "../components/CodeBlock";
 import { AnchorHeading, Prose, DemoCard, Btn } from "../components/ui";
@@ -27,7 +28,7 @@ export function ZodSection() {
       setZodValue("");
       setZodLabel("");
     } catch (e: any) {
-      setZodError(e.message ?? String(e));
+      setZodError(e instanceof ConvexError ? String(e.data) : (e.message ?? String(e)));
     }
   };
 
