@@ -67,10 +67,13 @@ git push origin main --follow-tags
 
 Once the tag is pushed, GitHub Actions will automatically:
 
-1. ✅ Run type checking (`npm run typecheck`)
-2. ✅ Run tests (`npm test`)
-3. ✅ Build the package (`npm run build`)
-4. ✅ Publish to npm with provenance
+1. ✅ Install dependencies from the committed lockfile (`npm ci --ignore-scripts`)
+2. ✅ Run type checking (`npm run typecheck`)
+3. ✅ Run tests (`npm test`)
+4. ✅ Build and pack the package (`npm pack`, which runs `prepack`)
+5. ✅ Publish that tarball to npm with provenance, from a separate job
+
+The `build` job installs dependencies and runs the checks, but has no publish rights. Only the `publish` job can get an npm OIDC token, and it doesn't check out the repo or install anything: it downloads the tarball from the `build` job and publishes it. It uses a pinned npm version (Trusted Publishing needs npm 11.5.1 or later).
 
 You can monitor the progress in the "Actions" tab of your GitHub repository.
 
@@ -126,7 +129,7 @@ Log in to npmjs.com and verify your email address.
 
 ## CI/CD Workflows
 
-Two workflows are configured:
+Three workflows are configured. All of them install with `npm ci` from the committed `package-lock.json`, so commit lockfile changes along with dependency changes. Actions are pinned to commit SHAs.
 
 ### CI Workflow (`.github/workflows/ci.yml`)
 
@@ -137,5 +140,19 @@ Two workflows are configured:
 ### Publish Workflow (`.github/workflows/publish.yml`)
 
 - Runs only when version tags are pushed (e.g., `v0.1.0`)
-- Executes full CI checks
-- Publishes to npm on success
+- Executes full CI checks and packs the tarball (`build` job)
+- Publishes that tarball to npm on success (`publish` job)
+
+### Deploy Docs Workflow (`.github/workflows/deploy-docs.yml`)
+
+- Runs on every push to `main`
+- Deploys the `apps/docs` Convex backend and static site
+
+### Lockfile and platform packages
+
+npm has a [bug](https://github.com/npm/cli/issues/4828) where updating an existing lockfile can drop optional platform packages such as `@rollup/rollup-linux-x64-gnu`. If CI fails with `Cannot find module @rollup/rollup-linux-x64-gnu`, regenerate the lockfile from scratch and commit it:
+
+```bash
+rm -rf node_modules apps/*/node_modules packages/*/node_modules package-lock.json
+npm install
+```

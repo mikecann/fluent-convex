@@ -6,28 +6,26 @@ on:
       - 'v*'
 
 permissions:
-  id-token: write  # Required for OIDC
   contents: read
 
 jobs:
-  publish:
+  # Installs dependencies, runs the checks and packs the tarball. This job has
+  # no publish rights, so nothing it installs can publish to npm.
+  build:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
         with:
           node-version: '20'
-          registry-url: 'https://registry.npmjs.org'
-
-      - name: Upgrade npm for Trusted Publishing
-        run: npm install -g npm@latest
+          package-manager-cache: false # no shared cache in a release job
 
       - name: Install dependencies
-        run: |
-          rm -rf node_modules package-lock.json
-          npm install
+        run: npm ci --ignore-scripts
 
       - name: Build package first
         run: npm run build --workspace=packages/fluent-convex
@@ -52,7 +50,44 @@ jobs:
           fi
           echo "Version $VERSION is not published, proceeding with publish"
 
-      - name: Publish to npm
+      # `prepack` copies the root README into the package and rebuilds dist/
+      - name: Pack tarball
         working-directory: packages/fluent-convex
-        run: npm publish
+        run: |
+          mkdir -p "$RUNNER_TEMP/package"
+          npm pack --pack-destination "$RUNNER_TEMP/package"
 
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: npm-package
+          path: ${{ runner.temp }}/package/*.tgz
+          if-no-files-found: error
+          retention-days: 7
+
+  # Only this job can mint an npm OIDC token. It never checks out the repo or
+  # installs dependencies: it publishes the tarball the build job packed.
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # npm Trusted Publishing (OIDC) and provenance
+
+    steps:
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+
+      # Trusted Publishing needs npm 11.5.1 or later. Pinned so a new npm
+      # release can't change (or break) the publish step. npm 12 needs Node 22+.
+      - name: Install npm for Trusted Publishing
+        run: npm install -g npm@11.12.1
+
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: npm-package
+          path: package
+
+      - name: Publish to npm
+        run: npm publish ./package/*.tgz

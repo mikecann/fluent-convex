@@ -28,7 +28,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run --typecheck",
     "dev:test": "vitest --typecheck",
-    "prepublishOnly": "node -e \"require('fs').copyFileSync('../../README.md','README.md')\" && npm run build"
+    "prepack": "node -e \"require('fs').copyFileSync('../../README.md','README.md')\" && npm run build"
   },
   "keywords": [
     "convex",
