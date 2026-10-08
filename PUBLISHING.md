@@ -73,7 +73,7 @@ Once the tag is pushed, GitHub Actions will automatically:
 4. ✅ Build and pack the package (`npm pack`, which runs `prepack`)
 5. ✅ Publish that tarball to npm with provenance, from a separate job
 
-The `build` job installs dependencies and runs the checks, but has no publish rights. Only the `publish` job can get an npm OIDC token, and it doesn't check out the repo or install anything: it downloads the tarball from the `build` job and publishes it. It uses a pinned npm version (Trusted Publishing needs npm 11.5.1 or later).
+The `build` job installs dependencies and runs the checks, but has no publish rights. Only the `publish` job can get an npm OIDC token, and it doesn't check out the repo or install anything: it downloads the tarball from the `build` job and publishes it. It runs on Node 24, whose bundled npm supports Trusted Publishing (npm 11.5.1 or later). The `build` job also fails if the tag doesn't match the version in `packages/fluent-convex/package.json`.
 
 You can monitor the progress in the "Actions" tab of your GitHub repository.
 

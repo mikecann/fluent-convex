@@ -39,10 +39,14 @@ jobs:
       - name: Build package (verify)
         run: npm run build
 
-      - name: Check if version already published
+      - name: Check tag matches version and version is new
         working-directory: packages/fluent-convex
         run: |
           VERSION=$(node -p "require('./package.json').version")
+          if [ "${GITHUB_REF_NAME#v}" != "$VERSION" ]; then
+            echo "Error: tag $GITHUB_REF_NAME doesn't match packages/fluent-convex version $VERSION"
+            exit 1
+          fi
           if npm view fluent-convex@$VERSION version > /dev/null 2>&1; then
             echo "Error: Version $VERSION is already published to npm"
             echo "Please bump the version in packages/fluent-convex/package.json and create a new tag"
@@ -74,20 +78,18 @@ jobs:
       id-token: write # npm Trusted Publishing (OIDC) and provenance
 
     steps:
+      # Trusted Publishing needs npm 11.5.1 or later, which Node 24 already
+      # bundles, so this job doesn't install anything from the registry.
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
         with:
-          node-version: '20'
+          node-version: '24'
           registry-url: 'https://registry.npmjs.org'
-
-      # Trusted Publishing needs npm 11.5.1 or later. Pinned so a new npm
-      # release can't change (or break) the publish step. npm 12 needs Node 22+.
-      - name: Install npm for Trusted Publishing
-        run: npm install -g npm@11.12.1
 
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: npm-package
           path: package
 
+      # Publish only the tarball for the tagged version
       - name: Publish to npm
-        run: npm publish ./package/*.tgz
+        run: npm publish "./package/fluent-convex-${GITHUB_REF_NAME#v}.tgz"
