@@ -65,8 +65,10 @@ export function ActionsSection() {
             disabled={loading}
             onClick={() => {
               setLoading(true);
+              setError(null);
               void getSnapshot({})
                 .then((s) => setSnapshot(s))
+                .catch(setError)
                 .finally(() => setLoading(false));
             }}
           >

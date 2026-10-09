@@ -16,9 +16,14 @@ export function TaskManager() {
   if (!data) return <p className="text-sm">Loading tasks...</p>;
 
   const submit = () => {
+    const submitted = title;
     setError(null);
-    void addTask({ title: title.trim(), priority }).catch(setError);
     setTitle("");
+    void addTask({ title: submitted.trim(), priority }).catch((err: unknown) => {
+      setError(err);
+      // Put the title back so a rejected task can be retried
+      setTitle((current) => current || submitted);
+    });
   };
 
   return (

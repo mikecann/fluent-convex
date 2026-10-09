@@ -54,7 +54,13 @@ export function BasicsSection() {
           >
             Add random number
           </Btn>
-          <Btn variant="danger" onClick={() => void deleteAll({})}>
+          <Btn
+            variant="danger"
+            onClick={() => {
+              setError(null);
+              void deleteAll({}).catch(setError);
+            }}
+          >
             Clear all
           </Btn>
         </div>
