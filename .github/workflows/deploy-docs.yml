@@ -7,6 +7,9 @@ on:
   # Allow manual trigger from Actions tab
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 # Only allow one deploy at a time, cancel in-progress runs
 concurrency:
   group: deploy-docs
@@ -17,16 +20,19 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
         with:
           node-version: '20'
+          package-manager-cache: false # no shared cache in a deploy job
 
+      # Install exactly what's in the committed lockfile, without running
+      # dependency install scripts, before the deploy key is in scope.
       - name: Install dependencies
-        run: |
-          rm -rf node_modules package-lock.json
-          npm install
+        run: npm ci --ignore-scripts
 
       - name: Build core library
         run: npm run build --workspace=packages/fluent-convex
