@@ -7,22 +7,14 @@
  *   - authCleanup.ts deletes guests and their sessions after about an hour
  */
 
-import { ConvexError, v } from "convex/values";
+import { ConvexError } from "convex/values";
 import { convexAuth } from "@convex-dev/auth/server";
 import { Anonymous } from "@convex-dev/auth/providers/Anonymous";
-import { internal } from "./_generated/api";
-import { internalMutation } from "./_generated/server";
 
 // Most guest sign-ins the demo accepts per rolling minute, across everyone
-const GUEST_SIGN_INS_PER_MINUTE = 30;
+const GUEST_SIGN_INS_PER_MINUTE = 150;
 
-export const {
-  auth,
-  signIn,
-  signOut,
-  store: authStore,
-  isAuthenticated,
-} = convexAuth({
+export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
   providers: [Anonymous],
   callbacks: {
     // Runs in the same transaction that creates the guest's user, so throwing
@@ -38,31 +30,5 @@ export const {
         throw new ConvexError("The live demo is busy. Try again in a minute.");
       }
     },
-  },
-});
-
-// Workaround for GHSA-579h-4cfp-fh53, from the advisory: check that the IDs
-// sent to the library's `store` are from the right tables. Once we're on
-// @convex-dev/auth 0.0.96 or later, delete this and export the library's
-// `store` as `store` again.
-export const store = internalMutation({
-  args: { args: v.any() },
-  handler: async (ctx, { args }): Promise<any> => {
-    if (args.type === "refreshSession") {
-      const [refreshTokenId, sessionId] = args.refreshToken.split("|");
-      if (
-        ctx.db.normalizeId("authRefreshTokens", refreshTokenId) === null ||
-        ctx.db.normalizeId("authSessions", sessionId) === null
-      ) {
-        return null;
-      }
-    }
-    if (
-      args.type === "verifierSignature" &&
-      ctx.db.normalizeId("authVerifiers", args.verifier) === null
-    ) {
-      throw new Error("Invalid verifier");
-    }
-    return await ctx.runMutation(internal.auth.authStore, { args });
   },
 });
