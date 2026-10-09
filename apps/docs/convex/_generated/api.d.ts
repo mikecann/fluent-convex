@@ -10,6 +10,7 @@
 
 import type * as actions from "../actions.js";
 import type * as auth from "../auth.js";
+import type * as authCleanup from "../authCleanup.js";
 import type * as authed from "../authed.js";
 import type * as basics from "../basics.js";
 import type * as chains from "../chains.js";
@@ -31,6 +32,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   actions: typeof actions;
   auth: typeof auth;
+  authCleanup: typeof authCleanup;
   authed: typeof authed;
   basics: typeof basics;
   chains: typeof chains;

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery } from "convex/react";
+import { ConvexError } from "convex/values";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { api } from "../../convex/_generated/api";
 import { Badge, Btn, ErrorNote, PriorityBadge } from "./ui";
@@ -101,36 +102,36 @@ export function SignInForm() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const demoLogin = () => {
+  // Anonymous sign-in: no email or password, just a throwaway guest user
+  const signInAsGuest = () => {
     setError(null);
     setLoading(true);
-    const formData = new FormData();
-    formData.set("email", "demo@fluent-convex.dev");
-    formData.set("password", "demodemo");
-    formData.set("flow", "signUp");
-    // Try sign-up first (creates the account if it doesn't exist),
-    // fall back to sign-in if the account already exists.
-    void signIn("password", formData)
-      .catch(() => {
-        formData.set("flow", "signIn");
-        return signIn("password", formData);
-      })
-      .catch((err: Error) => setError(err.message))
+    void signIn("anonymous")
+      .catch((err: unknown) =>
+        setError(
+          err instanceof ConvexError
+            ? String(err.data)
+            : err instanceof Error
+              ? err.message
+              : "Sign-in failed"
+        )
+      )
       .finally(() => setLoading(false));
   };
 
   return (
     <div className="flex flex-col gap-3 max-w-sm">
       <p className="text-sm text-slate-500">
-        Sign in to try the authenticated task manager demo.
+        Sign in as a guest to try the authenticated task manager demo. No email
+        or password needed.
       </p>
       <button
         type="button"
         disabled={loading}
-        onClick={demoLogin}
+        onClick={signInAsGuest}
         className="text-sm px-4 py-2 rounded-md font-medium bg-indigo-600 hover:bg-indigo-700 text-white cursor-pointer disabled:opacity-50"
       >
-        {loading ? "Signing in..." : "Try with demo account"}
+        {loading ? "Signing in..." : "Try it as a guest"}
       </button>
       {error && (
         <p className="text-sm text-red-500 bg-red-500/10 border border-red-500/30 rounded px-3 py-2">
