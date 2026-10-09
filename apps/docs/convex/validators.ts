@@ -14,6 +14,7 @@ import { v } from "convex/values";
 import { z } from "zod";
 import { WithZod } from "fluent-convex/zod";
 import { convex } from "./fluent";
+import { checkDemoRateLimit } from "./seed";
 
 // ---------------------------------------------------------------------------
 // 1. Property validators (the simplest form)
@@ -96,6 +97,7 @@ export const addPositiveNumber = convex
   )
   .returns(v.id("numbers"))
   .handler(async (ctx, input) => {
+    await checkDemoRateLimit(ctx, "numbers"); // the demo is public, so cap writes
     if (input.label) {
       console.log(`Adding number with label: ${input.label}`);
     }

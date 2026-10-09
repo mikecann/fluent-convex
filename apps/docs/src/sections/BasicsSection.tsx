@@ -1,13 +1,15 @@
+import { useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { CodeBlock } from "../components/CodeBlock";
-import { Prose, DemoCard, Btn } from "../components/ui";
+import { Prose, DemoCard, Btn, ErrorNote } from "../components/ui";
 import { basicsSource } from "../sources";
 
 export function BasicsSection() {
   const result = useQuery(api.basics.listNumbers, { count: 10 });
   const addNumber = useMutation(api.basics.addNumber);
   const deleteAll = useMutation(api.basics.deleteAllNumbers);
+  const [error, setError] = useState<unknown>(null);
 
   return (
     <section id="basics" className="flex flex-col gap-6">
@@ -44,13 +46,25 @@ export function BasicsSection() {
             : "loading..."}
         </p>
         <div className="flex gap-2">
-          <Btn onClick={() => void addNumber({ value: Math.floor(Math.random() * 100) })}>
+          <Btn
+            onClick={() => {
+              setError(null);
+              void addNumber({ value: Math.floor(Math.random() * 100) }).catch(setError);
+            }}
+          >
             Add random number
           </Btn>
-          <Btn variant="danger" onClick={() => void deleteAll({})}>
+          <Btn
+            variant="danger"
+            onClick={() => {
+              setError(null);
+              void deleteAll({}).catch(setError);
+            }}
+          >
             Clear all
           </Btn>
         </div>
+        <ErrorNote error={error} />
       </DemoCard>
     </section>
   );
