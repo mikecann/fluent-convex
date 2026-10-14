@@ -22,5 +22,8 @@
   "devDependencies": {
     "prettier": "^3.5.3",
     "typescript": "~5.9.0"
+  },
+  "overrides": {
+    "convex-helpers": "^0.1.127"
   }
 }
