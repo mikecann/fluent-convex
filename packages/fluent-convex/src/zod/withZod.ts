@@ -120,8 +120,11 @@ export class WithZod<
 
   /**
    * Override use() to return WithZod type (runtime behavior is inherited from base).
-   */
-  // @ts-ignore -- narrows return type from base to WithZod
+   *
+   * The suppression has to live on the last line of this doc comment, not in a
+   * `//` comment: tsc drops `//` comments from the emitted .d.ts, and without it
+   * consumers with `skipLibCheck: false` get TS2416 on this override.
+   * @ts-ignore -- narrows return type from base to WithZod */
   use<UOutContext extends Context>(
     middleware: ConvexMiddleware<TCurrentContext, UOutContext>
   ): WithZod<
@@ -138,8 +141,7 @@ export class WithZod<
    * Accepts Zod schemas in addition to Convex validators.
    * When a Zod schema is detected, converts to Convex validator and sets
    * argsTransform for full runtime validation including refinements.
-   */
-  // @ts-ignore -- intentionally widens parameter type to accept Zod schemas
+   * @ts-ignore -- widens the parameter to accept Zod schemas (see use() above) */
   input<UInput extends ValidatorInput>(
     validator: UInput
   ): WithZod<
@@ -168,8 +170,7 @@ export class WithZod<
    * Accepts Zod schemas in addition to Convex validators.
    * When a Zod schema is detected, converts to Convex validator and sets
    * returnsTransform for full runtime validation including refinements.
-   */
-  // @ts-ignore -- intentionally widens parameter type to accept Zod schemas
+   * @ts-ignore -- widens the parameter to accept Zod schemas (see use() above) */
   returns<UReturns extends ReturnsValidatorInput>(
     validator: UReturns
   ): WithZod<
