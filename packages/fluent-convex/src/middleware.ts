@@ -1,4 +1,4 @@
-import { Context, Promisable } from "./types";
+import { Context, Promisable } from "./types.js";
 
 export interface ConvexMiddleware<
   TInContext extends Context,

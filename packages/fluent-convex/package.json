@@ -26,6 +26,7 @@
     "build": "tsc -p tsconfig.build.json",
     "dev": "tsc -p tsconfig.build.json --watch",
     "typecheck": "tsc --noEmit",
+    "check:dist": "node --input-type=module -e \"await import('fluent-convex'); await import('fluent-convex/zod'); console.log('dist imports OK in plain Node')\"",
     "test": "vitest run --typecheck",
     "dev:test": "vitest --typecheck",
     "prepack": "node -e \"require('fs').copyFileSync('../../README.md','README.md')\" && npm run build"

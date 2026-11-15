@@ -1,5 +1,5 @@
 import { type GenericDataModel } from "convex/server";
-import { ConvexBuilder } from "./ConvexBuilder";
+import { ConvexBuilder } from "./ConvexBuilder.js";
 
 export function createBuilder<
   TDataModel extends GenericDataModel,

@@ -10,8 +10,8 @@ import {
   actionGeneric,
   internalActionGeneric,
 } from "convex/server";
-import type { ConvexMiddleware, AnyConvexMiddleware } from "./middleware";
-import { extend as extendBuilder } from "./extend";
+import type { ConvexMiddleware, AnyConvexMiddleware } from "./middleware.js";
+import { extend as extendBuilder } from "./extend.js";
 import type {
   FunctionType,
   Context,
@@ -26,7 +26,7 @@ import type {
   MutationCtx,
   ActionCtx,
   ExpectedReturnType,
-} from "./types";
+} from "./types.js";
 
 /**
  * Determines the return type for the registered Convex function.

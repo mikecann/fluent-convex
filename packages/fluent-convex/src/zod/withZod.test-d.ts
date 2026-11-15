@@ -6,8 +6,8 @@ import {
   defineTable,
   type DataModelFromSchemaDefinition,
 } from "convex/server";
-import { createBuilder } from "../builder";
-import { WithZod } from "./withZod";
+import { createBuilder } from "../builder.js";
+import { WithZod } from "./withZod.js";
 
 const schema = defineSchema({
   numbers: defineTable({
