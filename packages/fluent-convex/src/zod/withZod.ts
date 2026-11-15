@@ -1,6 +1,7 @@
 import type { z } from "zod/v4";
 import { zodToConvex } from "convex-helpers/server/zod4";
 import type { GenericDataModel } from "convex/server";
+import { ConvexError } from "convex/values";
 import type {
   PropertyValidators,
   GenericValidator,
@@ -26,6 +27,42 @@ export function isZodSchema(value: unknown): value is z.ZodType {
     "_zod" in value &&
     "parse" in value
   );
+}
+
+/**
+ * Zod 3 schemas have `_def` but no `_zod`. They can't be converted, and without
+ * this check they'd fall through to the plain Convex path and fail later with a
+ * confusing "entries must be validators" error at registration.
+ */
+function assertNotZod3(value: unknown): void {
+  if (
+    value != null &&
+    typeof value === "object" &&
+    "_def" in value &&
+    "parse" in value &&
+    !("_zod" in value)
+  ) {
+    throw new Error(
+      'fluent-convex/zod needs Zod 4 schemas. On zod 3.25+, import { z } from "zod/v4".'
+    );
+  }
+}
+
+/**
+ * Validate args with the schema. A failure is thrown as a ConvexError, the same
+ * shape convex-helpers' zCustomQuery uses ({ ZodError: issues }), because Convex
+ * replaces the message of any other error with "Server Error" in production and
+ * the client would never see why its input was rejected.
+ */
+async function parseArgs(schema: z.ZodType, args: unknown): Promise<unknown> {
+  // safeParseAsync so async refinements (`.refine(async ...)`) work.
+  const parsed = await schema.safeParseAsync(args);
+  if (!parsed.success) {
+    throw new ConvexError({
+      ZodError: JSON.parse(JSON.stringify(parsed.error.issues)),
+    });
+  }
+  return parsed.data;
 }
 
 // ---------- Type helpers ----------
@@ -157,9 +194,10 @@ export class WithZod<
         ...(this as any).def,
         argsValidator: convexValidator,
         argsTransform: (args: unknown) =>
-          (validator as unknown as z.ZodType).parse(args),
+          parseArgs(validator as unknown as z.ZodType, args),
       });
     }
+    assertNotZod3(validator);
     // Delegate to base for plain Convex validators
     return (
       ConvexBuilderWithFunctionKind.prototype.input as any
@@ -185,10 +223,14 @@ export class WithZod<
       return this._clone({
         ...(this as any).def,
         returnsValidator: convexValidator,
+        // A bad return value is a bug in the handler, not the caller, so this
+        // stays a plain error (hidden from clients in production), like
+        // convex-helpers does. parseAsync so async refinements work.
         returnsTransform: (result: unknown) =>
-          (validator as unknown as z.ZodType).parse(result),
+          (validator as unknown as z.ZodType).parseAsync(result),
       });
     }
+    assertNotZod3(validator);
     // Delegate to base for plain Convex validators
     return (
       ConvexBuilderWithFunctionKind.prototype.returns as any

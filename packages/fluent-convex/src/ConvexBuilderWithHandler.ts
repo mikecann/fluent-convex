@@ -138,7 +138,7 @@ export class ConvexBuilderWithHandler<
     // Run args transform hook if present (e.g. Zod validation from plugin)
     const { argsTransform, returnsTransform } = this.def;
     if (argsTransform) {
-      args = argsTransform(args);
+      args = await argsTransform(args);
     }
 
     let handlerResult: any;
@@ -162,7 +162,7 @@ export class ConvexBuilderWithHandler<
 
     // Run returns transform hook if present (e.g. Zod validation from plugin)
     if (returnsTransform) {
-      handlerResult = returnsTransform(handlerResult);
+      handlerResult = await returnsTransform(handlerResult);
     }
 
     return handlerResult;

@@ -9,16 +9,28 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
     },
     "./zod": {
       "types": "./dist/zod/index.d.ts",
-      "import": "./dist/zod/index.js"
+      "import": "./dist/zod/index.js",
+      "default": "./dist/zod/index.js"
     }
   },
+  "typesVersions": {
+    "*": {
+      "zod": [
+        "./dist/zod/index.d.ts"
+      ]
+    }
+  },
+  "sideEffects": false,
   "files": [
     "dist",
     "src",
+    "!src/**/*.test.ts",
+    "!src/**/*.test-d.ts",
     "README.md",
     "LICENSE.txt"
   ],
@@ -26,7 +38,7 @@
     "build": "tsc -p tsconfig.build.json",
     "dev": "tsc -p tsconfig.build.json --watch",
     "typecheck": "tsc --noEmit",
-    "check:dist": "node --input-type=module -e \"await import('fluent-convex'); await import('fluent-convex/zod'); console.log('dist imports OK in plain Node')\" && tsc -p dist-check && tsc -p dist-check --module preserve --moduleResolution bundler && echo 'dist types OK with skipLibCheck off'",
+    "check:dist": "node --input-type=module -e \"await import('fluent-convex'); await import('fluent-convex/zod'); console.log('dist imports OK in plain Node')\" && node -e \"require('fluent-convex'); require('fluent-convex/zod'); console.log('dist require() OK')\" && tsc -p dist-check && tsc -p dist-check --module preserve --moduleResolution bundler && echo 'dist types OK with skipLibCheck off'",
     "test": "vitest run --typecheck",
     "dev:test": "vitest --typecheck",
     "prepack": "node -e \"require('fs').copyFileSync('../../README.md','README.md')\" && npm run build"
@@ -52,7 +64,7 @@
   },
   "peerDependencies": {
     "convex": "^1.46.0",
-    "convex-helpers": ">=0.1.127",
+    "convex-helpers": "^0.1.127",
     "zod": "^3.25.0 || ^4.0.0"
   },
   "peerDependenciesMeta": {

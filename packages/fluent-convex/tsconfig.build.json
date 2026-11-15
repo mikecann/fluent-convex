@@ -7,6 +7,7 @@
     "resolveJsonModule": true,
     "allowJs": true,
     "checkJs": false,
+    "rootDir": "./src",
     "outDir": "./dist",
     "declaration": true,
     "declarationMap": true,

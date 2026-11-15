@@ -13,13 +13,13 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
-      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: '20'
+          node-version: '24'
 
       - name: Install dependencies
         run: npm ci --ignore-scripts
@@ -40,3 +40,36 @@ jobs:
 
       - name: Build package (verify)
         run: npm run build
+
+  # The lockfile pins one version of each peer. This job also tries the newest
+  # convex / convex-helpers / zod, and the oldest zod we claim (3.25, via its
+  # zod/v4 subpath), so a peer release that breaks us shows up here first.
+  peers:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        zod: ['latest', '3.25']
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Install latest peers
+        run: npm install --no-save --ignore-scripts convex@latest convex-helpers@latest zod@${{ matrix.zod }}
+
+      - name: Build
+        run: npm run build --workspace=packages/fluent-convex
+
+      - name: Import and type-check the built package as a consumer would
+        run: npm run check:dist --workspace=packages/fluent-convex
+
+      - name: Run package tests
+        run: npm test --workspace=packages/fluent-convex

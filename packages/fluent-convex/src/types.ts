@@ -85,9 +85,9 @@ export interface ConvexBuilderDef<
   returnsValidator?: TReturnsValidator;
   handler?: (context: Context, input: any) => Promise<any>;
   /** Optional hook to validate/transform args before the handler runs. Throw to reject. */
-  argsTransform?: (args: unknown) => unknown;
+  argsTransform?: (args: unknown) => unknown | Promise<unknown>;
   /** Optional hook to validate/transform the return value after the handler runs. Throw to reject. */
-  returnsTransform?: (result: unknown) => unknown;
+  returnsTransform?: (result: unknown) => unknown | Promise<unknown>;
 }
 export type ExpectedReturnType<
   TReturnsValidator extends ConvexReturnsValidator | undefined,

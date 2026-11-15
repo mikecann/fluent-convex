@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import { z } from "zod/v4";
+import { z as z3 } from "zod/v3";
 import {
   defineSchema,
   defineTable,
@@ -176,5 +177,76 @@ describe("WithZod plugin", () => {
       });
 
     await expect(fn({} as any, { name: "" })).rejects.toThrow();
+  });
+});
+
+describe("WithZod errors and async validation", () => {
+  it("throws input failures as a ConvexError carrying the Zod issues", async () => {
+    const fn = convex
+      .mutation()
+      .extend(WithZod)
+      .input(z.object({ value: z.number().positive("Value must be positive") }))
+      .handler(async (_ctx, input) => input.value);
+
+    // A plain Error would reach the client as "Server Error" in production,
+    // so the message has to travel in ConvexError data.
+    const err = await fn({} as any, { value: -5 }).catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(ConvexError);
+    const issues = (err as ConvexError<{ ZodError: { message: string }[] }>)
+      .data.ZodError;
+    expect(issues[0].message).toBe("Value must be positive");
+  });
+
+  it("keeps return failures as plain errors so handler output isn't sent to clients", async () => {
+    const fn = convex
+      .query()
+      .extend(WithZod)
+      .returns(z.number().positive())
+      .handler(async () => -1);
+
+    const err = await fn({} as any, {}).catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(Error);
+    expect(err).not.toBeInstanceOf(ConvexError);
+  });
+
+  it("supports async refinements on input", async () => {
+    const fn = convex
+      .query()
+      .extend(WithZod)
+      .input(
+        z.object({
+          name: z.string().refine(async (n) => n !== "taken", "Name is taken"),
+        })
+      )
+      .handler(async (_ctx, input) => input.name);
+
+    expect(await fn({} as any, { name: "free" })).toBe("free");
+    const err = await fn({} as any, { name: "taken" }).catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(ConvexError);
+  });
+
+  it("supports async refinements on returns", async () => {
+    const fn = convex
+      .query()
+      .extend(WithZod)
+      .returns(z.string().refine(async (s) => s.length > 0))
+      .handler(async () => "ok");
+
+    expect(await fn({} as any, {})).toBe("ok");
+  });
+
+  it("gives a clear error for Zod 3 schemas", () => {
+    expect(() =>
+      convex
+        .query()
+        .extend(WithZod)
+        .input(z3.object({ a: z3.string() }) as any)
+    ).toThrow(/needs Zod 4 schemas/);
+    expect(() =>
+      convex
+        .query()
+        .extend(WithZod)
+        .returns(z3.string() as any)
+    ).toThrow(/needs Zod 4 schemas/);
   });
 });

@@ -158,6 +158,8 @@ npm install zod convex-helpers
 
 > `zod` and `convex-helpers` are optional peer dependencies — only needed if you use this plugin.
 
+> The plugin works with Zod 4 schemas. On zod 3.25+, import them from `zod/v4` (`import { z } from "zod/v4"`).
+
 ```ts
 import { WithZod } from "fluent-convex/zod";
 import { z } from "zod";
@@ -182,6 +184,18 @@ export const listNumbers = convex
 - **Structural conversion** — Zod schemas are automatically converted to Convex validators
 - **Composable** — `.extend(WithZod)` preserves through `.use()`, `.input()`, and `.returns()` chains
 - **Plain validators still work** — mix Zod and Convex validators in the same builder chain
+
+When the input fails validation, the function throws a `ConvexError` whose `data` is `{ ZodError: issues }` (the same shape as convex-helpers' `zCustomQuery`), so the client sees why even in production:
+
+```ts
+try {
+  await addNumber({ value: -5 });
+} catch (e) {
+  if (e instanceof ConvexError) console.log(e.data.ZodError[0].message);
+}
+```
+
+A return value that fails `.returns()` throws a plain error instead, since that's a bug in the handler rather than in the caller's input.
 
 ## Custom Plugins
 
@@ -215,14 +229,14 @@ class MyPlugin extends ConvexBuilderWithFunctionKind {
 }
 ```
 
-Usage — plugins compose with `.extend()`:
+Usage — each `.extend()` swaps in the new plugin's class, so call a plugin's own methods before extending with the next one:
 
 ```ts
 export const myQuery = convex
   .query()
   .extend(MyPlugin)
-  .extend(WithZod)
   .myCustomMethod("hello")
+  .extend(WithZod)
   .input(z.object({ count: z.number() }))
   .handler(async (ctx, args) => {
     /* ... */
