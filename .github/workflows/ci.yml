@@ -62,8 +62,14 @@ jobs:
       - name: Install dependencies
         run: npm ci --ignore-scripts
 
+      # The root override pins convex-helpers for the lockfile and would clash
+      # with @latest, so drop it in this throwaway checkout. Installing into the
+      # package's own workspace makes its tests resolve these versions.
       - name: Install latest peers
-        run: npm install --no-save --ignore-scripts convex@latest convex-helpers@latest zod@${{ matrix.zod }}
+        run: |
+          npm pkg delete overrides
+          npm install --no-save --ignore-scripts -w packages/fluent-convex convex@latest convex-helpers@latest zod@${{ matrix.zod }}
+          npm ls convex convex-helpers zod -w packages/fluent-convex --depth=0
 
       - name: Build
         run: npm run build --workspace=packages/fluent-convex
