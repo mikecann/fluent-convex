@@ -27,7 +27,7 @@
     "react-dom": "^19.2.4",
     "sugar-high": "^0.9.5",
     "type-route": "^1.1.0",
-    "zod": "^4.3.6"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@convex-dev/eslint-plugin": "^1.1.1",
