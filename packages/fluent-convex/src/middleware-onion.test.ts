@@ -5,7 +5,7 @@ import {
   defineTable,
   type DataModelFromSchemaDefinition,
 } from "convex/server";
-import { createBuilder } from "./builder";
+import { createBuilder } from "./builder.js";
 
 const schema = defineSchema({
   numbers: defineTable({ value: v.number() }),

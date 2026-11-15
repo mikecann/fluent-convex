@@ -1,12 +1,12 @@
-export { createBuilder } from "./builder";
-export { ConvexBuilder } from "./ConvexBuilder";
-export { ConvexBuilderWithFunctionKind } from "./ConvexBuilderWithFunctionKind";
-export { ConvexBuilderWithHandler } from "./ConvexBuilderWithHandler";
+export { createBuilder } from "./builder.js";
+export { ConvexBuilder } from "./ConvexBuilder.js";
+export { ConvexBuilderWithFunctionKind } from "./ConvexBuilderWithFunctionKind.js";
+export { ConvexBuilderWithHandler } from "./ConvexBuilderWithHandler.js";
 
 export type {
   ConvexMiddleware,
   AnyConvexMiddleware,
-} from "./middleware";
+} from "./middleware.js";
 
 export type {
   Context,
@@ -20,6 +20,6 @@ export type {
   Visibility,
   EmptyObject,
   ConvexBuilderDef,
-} from "./types";
+} from "./types.js";
 
 export type { GenericDataModel } from "convex/server";

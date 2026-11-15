@@ -6,9 +6,9 @@ import {
   defineTable,
   type DataModelFromSchemaDefinition,
 } from "convex/server";
-import { createBuilder } from "../builder";
-import { ConvexBuilderWithFunctionKind } from "../ConvexBuilderWithFunctionKind";
-import { WithZod, isZodSchema } from "./withZod";
+import { createBuilder } from "../builder.js";
+import { ConvexBuilderWithFunctionKind } from "../ConvexBuilderWithFunctionKind.js";
+import { WithZod, isZodSchema } from "./withZod.js";
 
 const schema = defineSchema({
   test: defineTable({

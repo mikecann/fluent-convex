@@ -1,15 +1,15 @@
 import type { GenericDataModel } from "convex/server";
-import { ConvexBuilderDef } from "./types";
-import { ConvexBuilderWithFunctionKind } from "./ConvexBuilderWithFunctionKind";
-import type { ConvexMiddleware } from "./middleware";
+import { ConvexBuilderDef } from "./types.js";
+import { ConvexBuilderWithFunctionKind } from "./ConvexBuilderWithFunctionKind.js";
+import type { ConvexMiddleware } from "./middleware.js";
 import type {
   QueryCtx,
   MutationCtx,
   ActionCtx,
   Context,
   EmptyObject,
-} from "./types";
-import { extend as extendBuilder } from "./extend";
+} from "./types.js";
+import { extend as extendBuilder } from "./extend.js";
 
 export class ConvexBuilder<
   TDataModel extends GenericDataModel = GenericDataModel,

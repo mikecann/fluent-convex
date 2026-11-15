@@ -27,6 +27,11 @@ jobs:
       - name: Build package first
         run: npm run build --workspace=packages/fluent-convex
 
+      # Load dist/ with Node's own ESM loader, no bundler, the way consumers
+      # outside this monorepo do. Catches extensionless relative imports (#8).
+      - name: Import built package in plain Node
+        run: npm run check:dist --workspace=packages/fluent-convex
+
       - name: Run type checking
         run: npm run typecheck
 

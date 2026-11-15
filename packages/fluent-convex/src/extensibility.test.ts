@@ -6,15 +6,15 @@ import {
   GenericDataModel,
 } from "convex/server";
 import { v } from "convex/values";
-import { createBuilder } from "./builder";
-import { ConvexBuilderWithFunctionKind } from "./ConvexBuilderWithFunctionKind";
+import { createBuilder } from "./builder.js";
+import { ConvexBuilderWithFunctionKind } from "./ConvexBuilderWithFunctionKind.js";
 import {
   Context,
   EmptyObject,
   ConvexArgsValidator,
   ConvexReturnsValidator,
   FunctionType,
-} from "./types";
+} from "./types.js";
 
 // Define a minimal schema and builder for testing
 const schema = defineSchema({

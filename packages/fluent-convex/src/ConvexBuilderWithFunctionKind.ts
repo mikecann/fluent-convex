@@ -1,18 +1,18 @@
 import type { GenericDataModel } from "convex/server";
 import type { GenericValidator, PropertyValidators } from "convex/values";
-import { ConvexBuilderWithHandler } from "./ConvexBuilderWithHandler";
-import { InferredArgs, InferredHandlerReturn } from "./types";
-import { ConvexBuilderDef } from "./types";
-import { CallableBuilder } from "./types";
-import type { ConvexMiddleware, AnyConvexMiddleware } from "./middleware";
+import { ConvexBuilderWithHandler } from "./ConvexBuilderWithHandler.js";
+import { InferredArgs, InferredHandlerReturn } from "./types.js";
+import { ConvexBuilderDef } from "./types.js";
+import { CallableBuilder } from "./types.js";
+import type { ConvexMiddleware, AnyConvexMiddleware } from "./middleware.js";
 import type {
   FunctionType,
   Context,
   EmptyObject,
   ConvexArgsValidator,
   ConvexReturnsValidator,
-} from "./types";
-import { extend as extendBuilder } from "./extend";
+} from "./types.js";
+import { extend as extendBuilder } from "./extend.js";
 
 export class ConvexBuilderWithFunctionKind<
   TDataModel extends GenericDataModel = GenericDataModel,

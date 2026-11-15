@@ -5,7 +5,7 @@ import type {
   GenericQueryCtx,
   GenericDataModel,
 } from "convex/server";
-import type { AnyConvexMiddleware } from "./middleware";
+import type { AnyConvexMiddleware } from "./middleware.js";
 
 export type Context = object;
 

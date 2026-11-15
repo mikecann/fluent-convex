@@ -6,8 +6,8 @@ import type {
   GenericValidator,
   Validator,
 } from "convex/values";
-import { ConvexBuilderWithFunctionKind } from "../ConvexBuilderWithFunctionKind";
-import type { ConvexMiddleware } from "../middleware";
+import { ConvexBuilderWithFunctionKind } from "../ConvexBuilderWithFunctionKind.js";
+import type { ConvexMiddleware } from "../middleware.js";
 import type {
   FunctionType,
   Context,
@@ -15,7 +15,7 @@ import type {
   ConvexArgsValidator,
   ConvexReturnsValidator,
   ConvexBuilderDef,
-} from "../types";
+} from "../types.js";
 
 // ---------- Duck-type Zod detection ----------
 
