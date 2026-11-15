@@ -91,6 +91,12 @@ const DROPPED_ISSUE_FIELDS = new Set(["input", "params", "inst", "def"]);
 const SAFE_KEY = /^[a-zA-Z][a-zA-Z0-9_]{0,63}$/;
 // Unions inside unions inside unions: stop somewhere sane.
 const MAX_ISSUE_DEPTH = 8;
+// A wide union inside an array can turn a small input into tens of thousands
+// of branch issues, so the whole error carries at most this many, shared
+// across every level. Clients only need the first few to explain the failure.
+const MAX_PUBLIC_ISSUES = 100;
+
+type IssueBudget = { remaining: number };
 
 function toPublicScalar(value: unknown): PublicScalar | undefined {
   if (typeof value === "bigint") return value.toString();
@@ -105,8 +111,19 @@ function toPublicScalar(value: unknown): PublicScalar | undefined {
   return undefined;
 }
 
-function toPublicIssues(issues: unknown, depth: number): PublicZodIssue[] {
-  return Array.isArray(issues) ? issues.map((i) => toPublicIssue(i, depth)) : [];
+function toPublicIssues(
+  issues: unknown,
+  depth: number,
+  budget: IssueBudget
+): PublicZodIssue[] {
+  const out: PublicZodIssue[] = [];
+  if (!Array.isArray(issues)) return out;
+  for (const issue of issues) {
+    if (budget.remaining <= 0) break;
+    budget.remaining--;
+    out.push(toPublicIssue(issue, depth, budget));
+  }
+  return out;
 }
 
 /**
@@ -118,7 +135,11 @@ function toPublicIssues(issues: unknown, depth: number): PublicZodIssue[] {
  * convexToJson on it and a failure there turns the error back into "Server
  * Error", and it keeps user metadata attached to issues off the wire.
  */
-function toPublicIssue(issue: unknown, depth = 0): PublicZodIssue {
+function toPublicIssue(
+  issue: unknown,
+  depth: number,
+  budget: IssueBudget
+): PublicZodIssue {
   const raw = (
     typeof issue === "object" && issue !== null ? issue : {}
   ) as Record<string, unknown>;
@@ -136,14 +157,19 @@ function toPublicIssue(issue: unknown, depth = 0): PublicZodIssue {
     if (key === "errors" || key === "issues") {
       if (depth >= MAX_ISSUE_DEPTH || !Array.isArray(value)) continue;
       if (key === "errors") {
-        out.errors = value.map((branch) => toPublicIssues(branch, depth + 1));
+        const branches: PublicZodIssue[][] = [];
+        for (const branch of value) {
+          if (budget.remaining <= 0) break;
+          branches.push(toPublicIssues(branch, depth + 1, budget));
+        }
+        out.errors = branches;
       } else {
-        out.issues = toPublicIssues(value, depth + 1);
+        out.issues = toPublicIssues(value, depth + 1, budget);
       }
       continue;
     }
     if (Array.isArray(value)) {
-      const scalars = value.map(toPublicScalar);
+      const scalars = value.slice(0, MAX_PUBLIC_ISSUES).map(toPublicScalar);
       if (scalars.every((v) => v !== undefined)) {
         out[key] = scalars as PublicScalar[];
       }
@@ -158,7 +184,9 @@ function toPublicIssue(issue: unknown, depth = 0): PublicZodIssue {
 function toConvexError(
   issues: unknown[]
 ): ConvexError<{ ZodError: PublicZodIssue[] }> {
-  return new ConvexError({ ZodError: toPublicIssues(issues, 0) });
+  return new ConvexError({
+    ZodError: toPublicIssues(issues, 0, { remaining: MAX_PUBLIC_ISSUES }),
+  });
 }
 
 // ---------- Type helpers ----------

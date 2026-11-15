@@ -336,6 +336,33 @@ describe("WithZod errors and async validation", () => {
     expect(unknownKeys.keys).toEqual(["extra"]);
   });
 
+  it("caps the number of issues sent to the client", async () => {
+    const wide = z.union(
+      Array.from({ length: 64 }, () => z.string().min(1)) as any
+    );
+    const fn = convex
+      .query()
+      .extend(WithZod)
+      .input(z.object({ items: z.array(wide as z.ZodType<string>) }))
+      .handler(async () => null);
+
+    const err = await fn({} as any, { items: Array(200).fill("") }).catch(
+      (e: unknown) => e
+    );
+    const issues = expectClientVisible(err) as any[];
+    const count = (list: any[]): number =>
+      list.reduce(
+        (n, i) =>
+          n +
+          1 +
+          (i.errors ?? []).reduce((m: number, b: any[]) => m + count(b), 0) +
+          count(i.issues ?? []),
+        0
+      );
+    expect(count(issues)).toBeLessThanOrEqual(100);
+    expect(JSON.stringify(issues).length).toBeLessThan(100_000);
+  });
+
   it("gives a clear error for Zod 3 schemas", () => {
     expect(() =>
       convex
