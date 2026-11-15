@@ -69,7 +69,7 @@ jobs:
         run: |
           npm pkg delete overrides
           npm install --no-save --ignore-scripts -w packages/fluent-convex convex@latest convex-helpers@latest zod@${{ matrix.zod }}
-          npm ls convex convex-helpers zod -w packages/fluent-convex --depth=0
+          npm ls convex convex-helpers zod -w packages/fluent-convex --depth=0 || true  # --no-save leaves the old spec, so npm calls these "invalid"
 
       - name: Build
         run: npm run build --workspace=packages/fluent-convex

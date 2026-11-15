@@ -235,6 +235,50 @@ describe("WithZod errors and async validation", () => {
     expect(await fn({} as any, {})).toBe("ok");
   });
 
+  it("turns bigint validation failures into a ConvexError too", async () => {
+    const fn = convex
+      .query()
+      .extend(WithZod)
+      .input(z.object({ value: z.bigint().min(1n) }))
+      .handler(async (_ctx, input) => input.value);
+
+    const err = await fn({} as any, { value: 0n }).catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(ConvexError);
+  });
+
+  it("turns a ZodError thrown inside a transform into a ConvexError", async () => {
+    const fn = convex
+      .query()
+      .extend(WithZod)
+      .input(
+        z.object({
+          name: z.string().transform((s) => z.string().min(2).parse(s)),
+        })
+      )
+      .handler(async (_ctx, input) => input.name);
+
+    const err = await fn({} as any, { name: "" }).catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(ConvexError);
+  });
+
+  it("leaves other errors thrown inside a transform alone", async () => {
+    const fn = convex
+      .query()
+      .extend(WithZod)
+      .input(
+        z.object({
+          name: z.string().transform(() => {
+            throw new Error("internal");
+          }),
+        })
+      )
+      .handler(async (_ctx, input) => input.name);
+
+    const err = await fn({} as any, { name: "x" } as any).catch((e: unknown) => e);
+    expect(err).not.toBeInstanceOf(ConvexError);
+    expect((err as Error).message).toBe("internal");
+  });
+
   it("gives a clear error for Zod 3 schemas", () => {
     expect(() =>
       convex

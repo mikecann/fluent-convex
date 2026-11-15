@@ -55,14 +55,43 @@ function assertNotZod3(value: unknown): void {
  * the client would never see why its input was rejected.
  */
 async function parseArgs(schema: z.ZodType, args: unknown): Promise<unknown> {
-  // safeParseAsync so async refinements (`.refine(async ...)`) work.
-  const parsed = await schema.safeParseAsync(args);
-  if (!parsed.success) {
-    throw new ConvexError({
-      ZodError: JSON.parse(JSON.stringify(parsed.error.issues)),
-    });
+  let parsed;
+  try {
+    // safeParseAsync so async refinements (`.refine(async ...)`) work.
+    parsed = await schema.safeParseAsync(args);
+  } catch (e) {
+    // safeParse only catches its own checks. A ZodError thrown from inside a
+    // user callback (e.g. `.transform(s => other.parse(s))`) propagates, and is
+    // still a validation failure the client should see. Anything else is a
+    // server bug and stays hidden.
+    if (isZodError(e)) throw toConvexError(e.issues);
+    throw e;
   }
+  if (!parsed.success) throw toConvexError(parsed.error.issues);
   return parsed.data;
+}
+
+function isZodError(e: unknown): e is { issues: unknown[] } {
+  return (
+    e instanceof Error &&
+    e.name === "ZodError" &&
+    Array.isArray((e as { issues?: unknown }).issues)
+  );
+}
+
+/**
+ * ConvexError data must be a Convex value. The JSON round trip drops undefined
+ * fields and functions, and bigints (e.g. `minimum: 1n` from `z.bigint().min(1n)`),
+ * which JSON.stringify would otherwise throw on, become strings.
+ */
+function toConvexError(issues: unknown): ConvexError<{ ZodError: any }> {
+  return new ConvexError({
+    ZodError: JSON.parse(
+      JSON.stringify(issues, (_key, value) =>
+        typeof value === "bigint" ? value.toString() : value
+      )
+    ),
+  });
 }
 
 // ---------- Type helpers ----------
