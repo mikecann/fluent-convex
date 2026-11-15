@@ -71,27 +71,67 @@ async function parseArgs(schema: z.ZodType, args: unknown): Promise<unknown> {
   return parsed.data;
 }
 
+/**
+ * Classic `.parse()` throws ZodError, zod/v4/core's parse throws $ZodError, and
+ * errors built with `new z.ZodError(...)` don't extend native Error in Zod 4,
+ * so match on the name Zod sets and the issues array rather than instanceof.
+ */
 function isZodError(e: unknown): e is { issues: unknown[] } {
-  return (
-    e instanceof Error &&
-    e.name === "ZodError" &&
-    Array.isArray((e as { issues?: unknown }).issues)
-  );
+  if (typeof e !== "object" || e === null) return false;
+  const { name, issues } = e as { name?: unknown; issues?: unknown };
+  return (name === "ZodError" || name === "$ZodError") && Array.isArray(issues);
 }
 
+/** The shape of each entry in a ConvexError's `data.ZodError`. */
+export type PublicZodIssue = {
+  code: string;
+  message: string;
+  path: (string | number)[];
+  [field: string]: string | number | boolean | null | (string | number)[];
+};
+
+// Issue fields that can carry arbitrary or server-side data. `input` can hold
+// whatever a nested parse saw (e.g. with reportInput), `params` is free-form
+// refine metadata. Neither is part of the error contract we send to clients.
+const DROPPED_ISSUE_FIELDS = new Set(["input", "params", "inst", "def"]);
+
 /**
- * ConvexError data must be a Convex value. The JSON round trip drops undefined
- * fields and functions, and bigints (e.g. `minimum: 1n` from `z.bigint().min(1n)`),
- * which JSON.stringify would otherwise throw on, become strings.
+ * Copy only plain values off each issue: code, message, path and scalar fields
+ * like `minimum`, `expected` or `origin`. Anything nested (union branches,
+ * user metadata) is dropped. That keeps the data a valid Convex value (no
+ * cycles, no "$" keys, no bigints, which become strings) and keeps whatever a
+ * user callback attached to an issue off the wire.
  */
-function toConvexError(issues: unknown): ConvexError<{ ZodError: any }> {
-  return new ConvexError({
-    ZodError: JSON.parse(
-      JSON.stringify(issues, (_key, value) =>
-        typeof value === "bigint" ? value.toString() : value
-      )
-    ),
-  });
+function toPublicIssue(issue: unknown): PublicZodIssue {
+  const raw = (typeof issue === "object" && issue !== null ? issue : {}) as Record<
+    string,
+    unknown
+  >;
+  const out: PublicZodIssue = {
+    code: String(raw.code ?? "custom"),
+    message: String(raw.message ?? "Invalid input"),
+    path: Array.isArray(raw.path)
+      ? raw.path.map((p) => (typeof p === "number" ? p : String(p)))
+      : [],
+  };
+  for (const [key, value] of Object.entries(raw)) {
+    if (key in out || DROPPED_ISSUE_FIELDS.has(key)) continue;
+    if (!/^[a-zA-Z][a-zA-Z0-9_]{0,63}$/.test(key)) continue;
+    if (typeof value === "bigint") out[key] = value.toString();
+    else if (
+      typeof value === "number" ||
+      typeof value === "string" ||
+      typeof value === "boolean" ||
+      value === null
+    ) {
+      out[key] = value;
+    }
+  }
+  return out;
+}
+
+function toConvexError(issues: unknown[]): ConvexError<{ ZodError: PublicZodIssue[] }> {
+  return new ConvexError({ ZodError: issues.map(toPublicIssue) });
 }
 
 // ---------- Type helpers ----------

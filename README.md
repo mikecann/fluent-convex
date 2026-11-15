@@ -185,7 +185,7 @@ export const listNumbers = convex
 - **Composable** — `.extend(WithZod)` preserves through `.use()`, `.input()`, and `.returns()` chains
 - **Plain validators still work** — mix Zod and Convex validators in the same builder chain
 
-When the input fails validation, the function throws a `ConvexError` whose `data` is `{ ZodError: issues }` (the same shape as convex-helpers' `zCustomQuery`), so the client sees why even in production:
+When the input fails validation, the function throws a `ConvexError` whose `data` is `{ ZodError: issues }`, so the client sees why even in production. Each issue has `code`, `message` and `path`, plus Zod's other plain fields such as `minimum` (bigints become strings). Refine `params` and reported `input` values are left out, so nothing from the server leaks into the error:
 
 ```ts
 try {
