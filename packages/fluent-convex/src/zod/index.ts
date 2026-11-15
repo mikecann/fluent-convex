@@ -4,4 +4,5 @@ export type {
   ReturnsValidatorInput,
   ToConvexArgsValidator,
   ToConvexReturnsValidator,
+  PublicZodIssue,
 } from "./withZod.js";

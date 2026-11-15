@@ -28,7 +28,13 @@ export function ZodSection() {
       setZodValue("");
       setZodLabel("");
     } catch (e: any) {
-      setZodError(e instanceof ConvexError ? String(e.data) : (e.message ?? String(e)));
+      if (e instanceof ConvexError) {
+        // WithZod throws ConvexError({ ZodError: issues }) when input fails validation
+        const issues = (e.data as { ZodError?: { message: string }[] })?.ZodError;
+        setZodError(issues?.length ? issues.map((i) => i.message).join(", ") : String(e.data));
+      } else {
+        setZodError(e.message ?? String(e));
+      }
     }
   };
 

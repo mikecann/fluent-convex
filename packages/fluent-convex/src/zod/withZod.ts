@@ -1,6 +1,7 @@
 import type { z } from "zod/v4";
 import { zodToConvex } from "convex-helpers/server/zod4";
 import type { GenericDataModel } from "convex/server";
+import { ConvexError } from "convex/values";
 import type {
   PropertyValidators,
   GenericValidator,
@@ -26,6 +27,166 @@ export function isZodSchema(value: unknown): value is z.ZodType {
     "_zod" in value &&
     "parse" in value
   );
+}
+
+/**
+ * Zod 3 schemas have `_def` but no `_zod`. They can't be converted, and without
+ * this check they'd fall through to the plain Convex path and fail later with a
+ * confusing "entries must be validators" error at registration.
+ */
+function assertNotZod3(value: unknown): void {
+  if (
+    value != null &&
+    typeof value === "object" &&
+    "_def" in value &&
+    "parse" in value &&
+    !("_zod" in value)
+  ) {
+    throw new Error(
+      'fluent-convex/zod needs Zod 4 schemas. On zod 3.25+, import { z } from "zod/v4".'
+    );
+  }
+}
+
+/**
+ * Validate args with the schema. A failure is thrown as a ConvexError, the same
+ * shape convex-helpers' zCustomQuery uses ({ ZodError: issues }), because Convex
+ * replaces the message of any other error with "Server Error" in production and
+ * the client would never see why its input was rejected.
+ */
+async function parseArgs(schema: z.ZodType, args: unknown): Promise<unknown> {
+  // safeParseAsync so async refinements (`.refine(async ...)`) work. Only the
+  // schema's own validation failures become a client-visible ConvexError. An
+  // error thrown inside a user callback (even a ZodError from a nested parse)
+  // propagates untouched and stays hidden in production, because its paths and
+  // messages can describe server-side data. Throw a ConvexError from the
+  // callback if you want the client to see it.
+  const parsed = await schema.safeParseAsync(args);
+  if (!parsed.success) throw toConvexError(parsed.error.issues);
+  return parsed.data;
+}
+
+type PublicScalar = string | number | boolean | null;
+
+/** The shape of each entry in a ConvexError's `data.ZodError`. */
+export type PublicZodIssue = {
+  code: string;
+  message: string;
+  path: (string | number)[];
+  /** Branch failures of an `invalid_union` issue, one list per branch. */
+  errors?: PublicZodIssue[][];
+  /** Nested failures, e.g. a record key that failed its key schema. */
+  issues?: PublicZodIssue[];
+  [field: string]:
+    | PublicScalar
+    | PublicScalar[]
+    | PublicZodIssue[]
+    | PublicZodIssue[][]
+    | undefined;
+};
+
+// `input` can hold whatever a parse saw (e.g. with reportInput) and `params` is
+// free-form refine metadata, so neither goes to clients.
+const DROPPED_ISSUE_FIELDS = new Set(["input", "params", "inst", "def"]);
+const SAFE_KEY = /^[a-zA-Z][a-zA-Z0-9_]{0,63}$/;
+// Unions inside unions inside unions: stop somewhere sane.
+const MAX_ISSUE_DEPTH = 8;
+// A wide union inside an array can turn a small input into tens of thousands
+// of branch issues, so the whole error carries at most this many, shared
+// across every level. Clients only need the first few to explain the failure.
+const MAX_PUBLIC_ISSUES = 100;
+
+type IssueBudget = { remaining: number };
+
+function toPublicScalar(value: unknown): PublicScalar | undefined {
+  if (typeof value === "bigint") return value.toString();
+  if (
+    typeof value === "string" ||
+    typeof value === "number" ||
+    typeof value === "boolean" ||
+    value === null
+  ) {
+    return value;
+  }
+  return undefined;
+}
+
+function toPublicIssues(
+  issues: unknown,
+  depth: number,
+  budget: IssueBudget
+): PublicZodIssue[] {
+  const out: PublicZodIssue[] = [];
+  if (!Array.isArray(issues)) return out;
+  for (const issue of issues) {
+    if (budget.remaining <= 0) break;
+    budget.remaining--;
+    out.push(toPublicIssue(issue, depth, budget));
+  }
+  return out;
+}
+
+/**
+ * Rebuild each issue from plain values only: code, message, path, scalar
+ * fields like `minimum` or `expected`, arrays of scalars like `keys`, and the
+ * nested issues Zod uses for unions (`errors`) and record keys (`issues`).
+ * Everything else is dropped. That keeps the data a valid Convex value (no
+ * cycles, no "$" keys, bigints as strings), which matters because Convex runs
+ * convexToJson on it and a failure there turns the error back into "Server
+ * Error", and it keeps user metadata attached to issues off the wire.
+ */
+function toPublicIssue(
+  issue: unknown,
+  depth: number,
+  budget: IssueBudget
+): PublicZodIssue {
+  const raw = (
+    typeof issue === "object" && issue !== null ? issue : {}
+  ) as Record<string, unknown>;
+  const out: PublicZodIssue = {
+    code: String(raw.code ?? "custom"),
+    message: String(raw.message ?? "Invalid input"),
+    path: Array.isArray(raw.path)
+      ? raw.path.map((p) => (typeof p === "number" ? p : String(p)))
+      : [],
+  };
+  for (const [key, value] of Object.entries(raw)) {
+    if (key in out || DROPPED_ISSUE_FIELDS.has(key) || !SAFE_KEY.test(key)) {
+      continue;
+    }
+    if (key === "errors" || key === "issues") {
+      if (depth >= MAX_ISSUE_DEPTH || !Array.isArray(value)) continue;
+      if (key === "errors") {
+        const branches: PublicZodIssue[][] = [];
+        for (const branch of value) {
+          if (budget.remaining <= 0) break;
+          branches.push(toPublicIssues(branch, depth + 1, budget));
+        }
+        out.errors = branches;
+      } else {
+        out.issues = toPublicIssues(value, depth + 1, budget);
+      }
+      continue;
+    }
+    if (Array.isArray(value)) {
+      const scalars = value.slice(0, MAX_PUBLIC_ISSUES).map(toPublicScalar);
+      if (scalars.every((v) => v !== undefined)) {
+        out[key] = scalars as PublicScalar[];
+      }
+      continue;
+    }
+    const scalar = toPublicScalar(value);
+    if (scalar !== undefined) out[key] = scalar;
+  }
+  return out;
+}
+
+function toConvexError(
+  issues: unknown[]
+): ConvexError<{ ZodError: PublicZodIssue[] }> {
+  return new ConvexError({
+    ZodError: toPublicIssues(issues, 0, { remaining: MAX_PUBLIC_ISSUES }),
+  });
 }
 
 // ---------- Type helpers ----------
@@ -157,9 +318,10 @@ export class WithZod<
         ...(this as any).def,
         argsValidator: convexValidator,
         argsTransform: (args: unknown) =>
-          (validator as unknown as z.ZodType).parse(args),
+          parseArgs(validator as unknown as z.ZodType, args),
       });
     }
+    assertNotZod3(validator);
     // Delegate to base for plain Convex validators
     return (
       ConvexBuilderWithFunctionKind.prototype.input as any
@@ -185,10 +347,14 @@ export class WithZod<
       return this._clone({
         ...(this as any).def,
         returnsValidator: convexValidator,
+        // A bad return value is a bug in the handler, not the caller, so this
+        // stays a plain error (hidden from clients in production), like
+        // convex-helpers does. parseAsync so async refinements work.
         returnsTransform: (result: unknown) =>
-          (validator as unknown as z.ZodType).parse(result),
+          (validator as unknown as z.ZodType).parseAsync(result),
       });
     }
+    assertNotZod3(validator);
     // Delegate to base for plain Convex validators
     return (
       ConvexBuilderWithFunctionKind.prototype.returns as any

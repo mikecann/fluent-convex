@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { v } from "convex/values";
+import { ConvexError, convexToJson, v } from "convex/values";
 import { z } from "zod/v4";
+import { z as z3 } from "zod/v3";
 import {
   defineSchema,
   defineTable,
@@ -176,5 +177,204 @@ describe("WithZod plugin", () => {
       });
 
     await expect(fn({} as any, { name: "" })).rejects.toThrow();
+  });
+});
+
+describe("WithZod errors and async validation", () => {
+  it("throws input failures as a ConvexError carrying the Zod issues", async () => {
+    const fn = convex
+      .mutation()
+      .extend(WithZod)
+      .input(z.object({ value: z.number().positive("Value must be positive") }))
+      .handler(async (_ctx, input) => input.value);
+
+    // A plain Error would reach the client as "Server Error" in production,
+    // so the message has to travel in ConvexError data.
+    const err = await fn({} as any, { value: -5 }).catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(ConvexError);
+    const issues = (err as ConvexError<{ ZodError: { message: string }[] }>)
+      .data.ZodError;
+    expect(issues[0].message).toBe("Value must be positive");
+  });
+
+  it("keeps return failures as plain errors so handler output isn't sent to clients", async () => {
+    const fn = convex
+      .query()
+      .extend(WithZod)
+      .returns(z.number().positive())
+      .handler(async () => -1);
+
+    const err = await fn({} as any, {}).catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(Error);
+    expect(err).not.toBeInstanceOf(ConvexError);
+  });
+
+  it("supports async refinements on input", async () => {
+    const fn = convex
+      .query()
+      .extend(WithZod)
+      .input(
+        z.object({
+          name: z.string().refine(async (n) => n !== "taken", "Name is taken"),
+        })
+      )
+      .handler(async (_ctx, input) => input.name);
+
+    expect(await fn({} as any, { name: "free" })).toBe("free");
+    const err = await fn({} as any, { name: "taken" }).catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(ConvexError);
+  });
+
+  it("supports async refinements on returns", async () => {
+    const fn = convex
+      .query()
+      .extend(WithZod)
+      .returns(z.string().refine(async (s) => s.length > 0))
+      .handler(async () => "ok");
+
+    expect(await fn({} as any, {})).toBe("ok");
+  });
+
+  it("turns bigint validation failures into a ConvexError too", async () => {
+    const fn = convex
+      .query()
+      .extend(WithZod)
+      .input(z.object({ value: z.bigint().min(1n) }))
+      .handler(async (_ctx, input) => input.value);
+
+    const err = await fn({} as any, { value: 0n }).catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(ConvexError);
+  });
+
+  it("keeps a ZodError thrown inside a transform hidden from clients", async () => {
+    // A nested parse can describe server data (paths, messages), so only the
+    // schema's own failures are published.
+    const fn = convex
+      .query()
+      .extend(WithZod)
+      .input(
+        z.object({
+          name: z.string().transform((s) => z.string().min(2).parse(s)),
+        })
+      )
+      .handler(async (_ctx, input) => input.name);
+
+    const err = await fn({} as any, { name: "" }).catch((e: unknown) => e);
+    expect(err).not.toBeInstanceOf(ConvexError);
+  });
+
+  it("leaves other errors thrown inside a transform alone", async () => {
+    const fn = convex
+      .query()
+      .extend(WithZod)
+      .input(
+        z.object({
+          name: z.string().transform(() => {
+            throw new Error("internal");
+          }),
+        })
+      )
+      .handler(async (_ctx, input) => input.name);
+
+    const err = await fn({} as any, { name: "x" } as any).catch((e: unknown) => e);
+    expect(err).not.toBeInstanceOf(ConvexError);
+    expect((err as Error).message).toBe("internal");
+  });
+
+  // Convex runs convexToJson on ConvexError data when it sends the error to the
+  // client; if that throws, the client gets "Server Error" after all.
+  const expectClientVisible = (err: unknown) => {
+    expect(err).toBeInstanceOf(ConvexError);
+    const data = (err as ConvexError<any>).data;
+    expect(() => convexToJson(data)).not.toThrow();
+    return data.ZodError as Record<string, unknown>[];
+  };
+
+  it("keeps the error serializable with odd refine params", async () => {
+    const cyclic: any = {};
+    cyclic.self = cyclic;
+    const fn = convex
+      .query()
+      .extend(WithZod)
+      .input(
+        z.object({
+          a: z.string().refine((s) => s !== "bad", {
+            message: "Rejected",
+            params: { $rule: "x", self: cyclic },
+          }),
+        })
+      )
+      .handler(async (_ctx, input) => input.a);
+
+    const err = await fn({} as any, { a: "bad" }).catch((e: unknown) => e);
+    const issues = expectClientVisible(err);
+    expect(issues[0]).toMatchObject({ code: "custom", message: "Rejected", path: ["a"] });
+    expect(issues[0]).not.toHaveProperty("params");
+  });
+
+  it("keeps union branch errors and key lists", async () => {
+    const fn = convex
+      .query()
+      .extend(WithZod)
+      .input(
+        z.object({
+          contact: z.union([z.email(), z.url()]),
+          opts: z.strictObject({ a: z.number() }),
+        })
+      )
+      .handler(async () => null);
+
+    const err = await fn({} as any, {
+      contact: "bad",
+      opts: { a: 1, extra: 2 },
+    } as any).catch((e: unknown) => e);
+    const issues = expectClientVisible(err) as any[];
+    const union = issues.find((i) => i.code === "invalid_union");
+    expect(union.errors).toHaveLength(2);
+    expect(union.errors[0][0].code).toBe("invalid_format");
+    const unknownKeys = issues.find((i) => i.code === "unrecognized_keys");
+    expect(unknownKeys.keys).toEqual(["extra"]);
+  });
+
+  it("caps the number of issues sent to the client", async () => {
+    const wide = z.union(
+      Array.from({ length: 64 }, () => z.string().min(1)) as any
+    );
+    const fn = convex
+      .query()
+      .extend(WithZod)
+      .input(z.object({ items: z.array(wide as z.ZodType<string>) }))
+      .handler(async () => null);
+
+    const err = await fn({} as any, { items: Array(200).fill("") }).catch(
+      (e: unknown) => e
+    );
+    const issues = expectClientVisible(err) as any[];
+    const count = (list: any[]): number =>
+      list.reduce(
+        (n, i) =>
+          n +
+          1 +
+          (i.errors ?? []).reduce((m: number, b: any[]) => m + count(b), 0) +
+          count(i.issues ?? []),
+        0
+      );
+    expect(count(issues)).toBeLessThanOrEqual(100);
+    expect(JSON.stringify(issues).length).toBeLessThan(100_000);
+  });
+
+  it("gives a clear error for Zod 3 schemas", () => {
+    expect(() =>
+      convex
+        .query()
+        .extend(WithZod)
+        .input(z3.object({ a: z3.string() }) as any)
+    ).toThrow(/needs Zod 4 schemas/);
+    expect(() =>
+      convex
+        .query()
+        .extend(WithZod)
+        .returns(z3.string() as any)
+    ).toThrow(/needs Zod 4 schemas/);
   });
 });
