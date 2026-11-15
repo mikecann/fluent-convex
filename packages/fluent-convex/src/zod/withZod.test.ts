@@ -1,6 +1,5 @@
 import { describe, it, expect } from "vitest";
 import { ConvexError, convexToJson, v } from "convex/values";
-import * as zcore from "zod/v4/core";
 import { z } from "zod/v4";
 import { z as z3 } from "zod/v3";
 import {
@@ -247,7 +246,9 @@ describe("WithZod errors and async validation", () => {
     expect(err).toBeInstanceOf(ConvexError);
   });
 
-  it("turns a ZodError thrown inside a transform into a ConvexError", async () => {
+  it("keeps a ZodError thrown inside a transform hidden from clients", async () => {
+    // A nested parse can describe server data (paths, messages), so only the
+    // schema's own failures are published.
     const fn = convex
       .query()
       .extend(WithZod)
@@ -259,7 +260,7 @@ describe("WithZod errors and async validation", () => {
       .handler(async (_ctx, input) => input.name);
 
     const err = await fn({} as any, { name: "" }).catch((e: unknown) => e);
-    expect(err).toBeInstanceOf(ConvexError);
+    expect(err).not.toBeInstanceOf(ConvexError);
   });
 
   it("leaves other errors thrown inside a transform alone", async () => {
@@ -311,52 +312,28 @@ describe("WithZod errors and async validation", () => {
     expect(issues[0]).not.toHaveProperty("params");
   });
 
-  it("doesn't forward the input a nested parse reported", async () => {
-    const secret = "server-only-secret";
+  it("keeps union branch errors and key lists", async () => {
     const fn = convex
       .query()
       .extend(WithZod)
       .input(
         z.object({
-          a: z.string().transform(() =>
-            z.string().min(100).parse(secret, { reportInput: true })
-          ),
+          contact: z.union([z.email(), z.url()]),
+          opts: z.strictObject({ a: z.number() }),
         })
       )
-      .handler(async (_ctx, input) => input.a);
+      .handler(async () => null);
 
-    const err = await fn({} as any, { a: "x" }).catch((e: unknown) => e);
-    expectClientVisible(err);
-    expect(JSON.stringify((err as ConvexError<any>).data)).not.toContain(secret);
-  });
-
-  it("recognises errors from zod/v4/core and hand-built ZodErrors", async () => {
-    const viaCore = convex
-      .query()
-      .extend(WithZod)
-      .input(
-        z.object({ a: z.string().transform((s) => zcore.parse(z.string().min(2), s)) })
-      )
-      .handler(async (_ctx, input) => input.a);
-    expectClientVisible(await viaCore({} as any, { a: "" }).catch((e: unknown) => e));
-
-    const handBuilt = convex
-      .query()
-      .extend(WithZod)
-      .input(
-        z.object({
-          a: z.string().transform(() => {
-            throw new z.ZodError([
-              { code: "custom", message: "nope", path: [], input: "x" },
-            ]);
-          }),
-        })
-      )
-      .handler(async (_ctx, input) => input.a);
-    const issues = expectClientVisible(
-      await handBuilt({} as any, { a: "x" } as any).catch((e: unknown) => e)
-    );
-    expect(issues[0].message).toBe("nope");
+    const err = await fn({} as any, {
+      contact: "bad",
+      opts: { a: 1, extra: 2 },
+    } as any).catch((e: unknown) => e);
+    const issues = expectClientVisible(err) as any[];
+    const union = issues.find((i) => i.code === "invalid_union");
+    expect(union.errors).toHaveLength(2);
+    expect(union.errors[0][0].code).toBe("invalid_format");
+    const unknownKeys = issues.find((i) => i.code === "unrecognized_keys");
+    expect(unknownKeys.keys).toEqual(["extra"]);
   });
 
   it("gives a clear error for Zod 3 schemas", () => {

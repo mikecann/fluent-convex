@@ -55,58 +55,73 @@ function assertNotZod3(value: unknown): void {
  * the client would never see why its input was rejected.
  */
 async function parseArgs(schema: z.ZodType, args: unknown): Promise<unknown> {
-  let parsed;
-  try {
-    // safeParseAsync so async refinements (`.refine(async ...)`) work.
-    parsed = await schema.safeParseAsync(args);
-  } catch (e) {
-    // safeParse only catches its own checks. A ZodError thrown from inside a
-    // user callback (e.g. `.transform(s => other.parse(s))`) propagates, and is
-    // still a validation failure the client should see. Anything else is a
-    // server bug and stays hidden.
-    if (isZodError(e)) throw toConvexError(e.issues);
-    throw e;
-  }
+  // safeParseAsync so async refinements (`.refine(async ...)`) work. Only the
+  // schema's own validation failures become a client-visible ConvexError. An
+  // error thrown inside a user callback (even a ZodError from a nested parse)
+  // propagates untouched and stays hidden in production, because its paths and
+  // messages can describe server-side data. Throw a ConvexError from the
+  // callback if you want the client to see it.
+  const parsed = await schema.safeParseAsync(args);
   if (!parsed.success) throw toConvexError(parsed.error.issues);
   return parsed.data;
 }
 
-/**
- * Classic `.parse()` throws ZodError, zod/v4/core's parse throws $ZodError, and
- * errors built with `new z.ZodError(...)` don't extend native Error in Zod 4,
- * so match on the name Zod sets and the issues array rather than instanceof.
- */
-function isZodError(e: unknown): e is { issues: unknown[] } {
-  if (typeof e !== "object" || e === null) return false;
-  const { name, issues } = e as { name?: unknown; issues?: unknown };
-  return (name === "ZodError" || name === "$ZodError") && Array.isArray(issues);
-}
+type PublicScalar = string | number | boolean | null;
 
 /** The shape of each entry in a ConvexError's `data.ZodError`. */
 export type PublicZodIssue = {
   code: string;
   message: string;
   path: (string | number)[];
-  [field: string]: string | number | boolean | null | (string | number)[];
+  /** Branch failures of an `invalid_union` issue, one list per branch. */
+  errors?: PublicZodIssue[][];
+  /** Nested failures, e.g. a record key that failed its key schema. */
+  issues?: PublicZodIssue[];
+  [field: string]:
+    | PublicScalar
+    | PublicScalar[]
+    | PublicZodIssue[]
+    | PublicZodIssue[][]
+    | undefined;
 };
 
-// Issue fields that can carry arbitrary or server-side data. `input` can hold
-// whatever a nested parse saw (e.g. with reportInput), `params` is free-form
-// refine metadata. Neither is part of the error contract we send to clients.
+// `input` can hold whatever a parse saw (e.g. with reportInput) and `params` is
+// free-form refine metadata, so neither goes to clients.
 const DROPPED_ISSUE_FIELDS = new Set(["input", "params", "inst", "def"]);
+const SAFE_KEY = /^[a-zA-Z][a-zA-Z0-9_]{0,63}$/;
+// Unions inside unions inside unions: stop somewhere sane.
+const MAX_ISSUE_DEPTH = 8;
+
+function toPublicScalar(value: unknown): PublicScalar | undefined {
+  if (typeof value === "bigint") return value.toString();
+  if (
+    typeof value === "string" ||
+    typeof value === "number" ||
+    typeof value === "boolean" ||
+    value === null
+  ) {
+    return value;
+  }
+  return undefined;
+}
+
+function toPublicIssues(issues: unknown, depth: number): PublicZodIssue[] {
+  return Array.isArray(issues) ? issues.map((i) => toPublicIssue(i, depth)) : [];
+}
 
 /**
- * Copy only plain values off each issue: code, message, path and scalar fields
- * like `minimum`, `expected` or `origin`. Anything nested (union branches,
- * user metadata) is dropped. That keeps the data a valid Convex value (no
- * cycles, no "$" keys, no bigints, which become strings) and keeps whatever a
- * user callback attached to an issue off the wire.
+ * Rebuild each issue from plain values only: code, message, path, scalar
+ * fields like `minimum` or `expected`, arrays of scalars like `keys`, and the
+ * nested issues Zod uses for unions (`errors`) and record keys (`issues`).
+ * Everything else is dropped. That keeps the data a valid Convex value (no
+ * cycles, no "$" keys, bigints as strings), which matters because Convex runs
+ * convexToJson on it and a failure there turns the error back into "Server
+ * Error", and it keeps user metadata attached to issues off the wire.
  */
-function toPublicIssue(issue: unknown): PublicZodIssue {
-  const raw = (typeof issue === "object" && issue !== null ? issue : {}) as Record<
-    string,
-    unknown
-  >;
+function toPublicIssue(issue: unknown, depth = 0): PublicZodIssue {
+  const raw = (
+    typeof issue === "object" && issue !== null ? issue : {}
+  ) as Record<string, unknown>;
   const out: PublicZodIssue = {
     code: String(raw.code ?? "custom"),
     message: String(raw.message ?? "Invalid input"),
@@ -115,23 +130,35 @@ function toPublicIssue(issue: unknown): PublicZodIssue {
       : [],
   };
   for (const [key, value] of Object.entries(raw)) {
-    if (key in out || DROPPED_ISSUE_FIELDS.has(key)) continue;
-    if (!/^[a-zA-Z][a-zA-Z0-9_]{0,63}$/.test(key)) continue;
-    if (typeof value === "bigint") out[key] = value.toString();
-    else if (
-      typeof value === "number" ||
-      typeof value === "string" ||
-      typeof value === "boolean" ||
-      value === null
-    ) {
-      out[key] = value;
+    if (key in out || DROPPED_ISSUE_FIELDS.has(key) || !SAFE_KEY.test(key)) {
+      continue;
     }
+    if (key === "errors" || key === "issues") {
+      if (depth >= MAX_ISSUE_DEPTH || !Array.isArray(value)) continue;
+      if (key === "errors") {
+        out.errors = value.map((branch) => toPublicIssues(branch, depth + 1));
+      } else {
+        out.issues = toPublicIssues(value, depth + 1);
+      }
+      continue;
+    }
+    if (Array.isArray(value)) {
+      const scalars = value.map(toPublicScalar);
+      if (scalars.every((v) => v !== undefined)) {
+        out[key] = scalars as PublicScalar[];
+      }
+      continue;
+    }
+    const scalar = toPublicScalar(value);
+    if (scalar !== undefined) out[key] = scalar;
   }
   return out;
 }
 
-function toConvexError(issues: unknown[]): ConvexError<{ ZodError: PublicZodIssue[] }> {
-  return new ConvexError({ ZodError: issues.map(toPublicIssue) });
+function toConvexError(
+  issues: unknown[]
+): ConvexError<{ ZodError: PublicZodIssue[] }> {
+  return new ConvexError({ ZodError: toPublicIssues(issues, 0) });
 }
 
 // ---------- Type helpers ----------
