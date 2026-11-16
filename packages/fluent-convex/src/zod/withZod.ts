@@ -248,10 +248,15 @@ type ClientValue<F> =
               : F extends z.ZodUnion<infer Options>
                 ? ClientValue<Options[number]>
                 : F extends z.ZodRecord<infer Key, infer Value>
-                  ? Record<z.output<Key> & PropertyKey, ClientValue<Value>>
+                  ? IsOptionalField<Value> extends true
+                    ? Partial<Record<z.output<Key> & PropertyKey, ClientValue<Value>>>
+                    : Record<z.output<Key> & PropertyKey, ClientValue<Value>>
                   : F extends z.ZodTuple<infer Items, infer Rest>
                     ? ClientTuple<Items, Rest>
-                    : // Wrappers the converter unwraps.
+                    : // `.required()` on an object wraps each field like this.
+                      F extends z.ZodNonOptional<infer Inner>
+                      ? Exclude<ClientValue<Inner>, undefined>
+                      : // Wrappers the converter unwraps.
                       F extends
                           | z.ZodCatch<infer Inner>
                           | z.ZodReadonly<infer Inner>

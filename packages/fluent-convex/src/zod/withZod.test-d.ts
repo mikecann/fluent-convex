@@ -390,6 +390,27 @@ describe("WithZod input vs output types", () => {
     expectTypeOf<undefined extends A["optNullable"] ? true : false>().toEqualTypeOf<true>();
   });
 
+  it("handles .required() and records with optional values", () => {
+    const fn = convex
+      .query()
+      .extend(WithZod)
+      .input(
+        z.object({
+          req: z
+            .object({ n: z.string().transform(Number).optional() })
+            .required(),
+          settings: z.record(z.enum(["email", "push"]), z.boolean().optional()),
+        })
+      )
+      .handler(async () => null)
+      .public();
+
+    type A = ClientArgs<typeof fn>;
+    assertType<A>({ req: { n: "1" }, settings: {} });
+    // @ts-expect-error the registered validator takes the pre-transform string
+    assertType<A>({ req: { n: 1 }, settings: {} });
+  });
+
   it("doesn't let any in a transform bring back the raw handler signature", () => {
     const f = convex
       .query()
