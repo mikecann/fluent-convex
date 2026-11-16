@@ -1,9 +1,5 @@
 import type { z } from "zod/v4";
-import {
-  zodToConvex,
-  zodOutputToConvex,
-  type ConvexValidatorFromZod,
-} from "convex-helpers/server/zod4";
+import { zodToConvex, zodOutputToConvex } from "convex-helpers/server/zod4";
 import type { GenericDataModel } from "convex/server";
 import { ConvexError } from "convex/values";
 import type {
@@ -205,15 +201,30 @@ export type ValidatorInput =
 export type ReturnsValidatorInput = GenericValidator | z.ZodType;
 
 /**
- * Args for a Zod object schema. Clients get the type of the Convex validator
- * that zodToConvex actually registers (convex-helpers' own type for it), so the
- * client types can't promise more than Convex will accept: a `.default()` field
- * is optional, a `.transform()` field is its original type, `z.coerce.number()`
- * is a number, and `.passthrough()` doesn't allow extra keys. The handler gets
- * Zod's parsed output, carried on the type-only `handlerArgsType` key.
+ * The type a client may send for one field: Zod's input type, which is what
+ * zodToConvex builds the registered Convex validator from (a `.transform()`
+ * field is its original type). `z.coerce.*` inputs are `unknown` to Zod but
+ * register as the plain type (`v.number()`), so fall back to the output there.
+ */
+type ClientFieldType<F> = unknown extends z.input<F> ? z.output<F> : z.input<F>;
+
+/**
+ * Args for a Zod object schema. Clients get what the registered Convex
+ * validator accepts: keys from the schema's own shape (`.passthrough()` adds
+ * none), optional when Zod's input allows undefined (`.optional()`,
+ * `.default()`). The handler gets Zod's parsed output, carried on the
+ * type-only `handlerArgsType` key.
+ *
+ * convex-helpers has an exact type for this (ConvexValidatorFromZod), but
+ * referencing it from our .d.ts makes consumers with `skipLibCheck: false`
+ * type-check its zod4.d.ts, which currently fails there with TS2589.
  */
 type ZodObjectArgsValidator<T extends z.ZodObject<any>> = {
-  [K in keyof T["shape"]]: ConvexValidatorFromZod<T["shape"][K], "required">;
+  [K in keyof T["shape"]]: Validator<
+    ClientFieldType<T["shape"][K]>,
+    undefined extends z.input<T["shape"][K]> ? "optional" : "required",
+    any
+  >;
 } & { readonly [handlerArgsType]: z.output<T> };
 
 export type ToConvexArgsValidator<T extends ValidatorInput> =
