@@ -1,10 +1,11 @@
-import { describe, it, assertType } from "vitest";
+import { describe, it, assertType, expectTypeOf } from "vitest";
 import { v } from "convex/values";
 import { z } from "zod/v4";
 import {
   defineSchema,
   defineTable,
   type DataModelFromSchemaDefinition,
+  type RegisteredQuery,
 } from "convex/server";
 import { createBuilder } from "../builder.js";
 import { WithZod } from "./withZod.js";
@@ -205,5 +206,85 @@ describe("WithZod Callable Builder", () => {
         args: { count: number }
       ) => Promise<{ count: number }>
     >(callableQuery);
+  });
+});
+
+// What a client sees for a registered function, the same way Convex's
+// generated `api` types read it.
+// Flattened, because InferArgs builds an intersection that strict type
+// equality doesn't see through.
+type ClientArgs<F> =
+  F extends RegisteredQuery<any, infer A, any> ? { [K in keyof A]: A[K] } : never;
+type ClientReturns<F> =
+  F extends RegisteredQuery<any, any, infer R> ? Awaited<R> : never;
+
+describe("WithZod input vs output types", () => {
+  it("makes .default() fields optional for the client but set in the handler", () => {
+    const fn = convex
+      .query()
+      .extend(WithZod)
+      .input(z.object({ s: z.string().default("x"), n: z.number() }))
+      .handler(async (_ctx, input) => {
+        expectTypeOf(input).toEqualTypeOf<{ s: string; n: number }>();
+        return null;
+      })
+      .public();
+
+    expectTypeOf<ClientArgs<typeof fn>>().toMatchTypeOf<{
+      s?: string | undefined;
+      n: number;
+    }>();
+    // Leaving the defaulted field out is fine for the client.
+    assertType<ClientArgs<typeof fn>>({ n: 1 });
+  });
+
+  it("types .transform() fields as the pre-transform type for the client", () => {
+    const fn = convex
+      .query()
+      .extend(WithZod)
+      .input(z.object({ n: z.string().transform(Number) }))
+      .handler(async (_ctx, input) => {
+        expectTypeOf(input.n).toEqualTypeOf<number>();
+        return null;
+      })
+      .public();
+
+    assertType<ClientArgs<typeof fn>>({ n: "42" });
+    // @ts-expect-error the client sends the string, not the parsed number
+    assertType<ClientArgs<typeof fn>>({ n: 42 });
+  });
+
+  it("lets the handler return the pre-transform type and the client get the output", () => {
+    const fn = convex
+      .query()
+      .extend(WithZod)
+      .returns(z.string().transform((s) => s.length))
+      .handler(async () => "hello")
+      .public();
+
+    expectTypeOf<ClientReturns<typeof fn>>().toEqualTypeOf<number>();
+
+    convex
+      .query()
+      .extend(WithZod)
+      .returns(z.string().transform((s) => s.length))
+      // @ts-expect-error the handler returns the schema's input (a string)
+      .handler(async () => 5);
+  });
+
+  it("leaves plain Zod schemas the same on both sides", () => {
+    const fn = convex
+      .query()
+      .extend(WithZod)
+      .input(z.object({ count: z.number() }))
+      .returns(z.object({ total: z.number() }))
+      .handler(async (_ctx, input) => {
+        expectTypeOf(input).toEqualTypeOf<{ count: number }>();
+        return { total: input.count };
+      })
+      .public();
+
+    expectTypeOf<ClientArgs<typeof fn>>().toEqualTypeOf<{ count: number }>();
+    expectTypeOf<ClientReturns<typeof fn>>().toEqualTypeOf<{ total: number }>();
   });
 });

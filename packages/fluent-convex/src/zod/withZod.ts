@@ -1,5 +1,5 @@
 import type { z } from "zod/v4";
-import { zodToConvex } from "convex-helpers/server/zod4";
+import { zodToConvex, zodOutputToConvex } from "convex-helpers/server/zod4";
 import type { GenericDataModel } from "convex/server";
 import { ConvexError } from "convex/values";
 import type {
@@ -16,6 +16,8 @@ import type {
   ConvexArgsValidator,
   ConvexReturnsValidator,
   ConvexBuilderDef,
+  handlerArgsType,
+  handlerReturnType,
 } from "../types.js";
 
 // ---------- Duck-type Zod detection ----------
@@ -198,24 +200,36 @@ export type ValidatorInput =
 
 export type ReturnsValidatorInput = GenericValidator | z.ZodType;
 
+/**
+ * Args for a Zod object schema. The client sends Zod's *input* type (a
+ * `.default()` field is optional, a `.transform()` field is the pre-transform
+ * type), which is also what the converted Convex validator accepts. The handler
+ * gets Zod's *output* type, carried on the type-only `handlerArgsType` key.
+ */
+type ZodObjectArgsValidator<T extends z.ZodObject<any>> = {
+  [K in keyof z.input<T>]-?: Validator<
+    z.input<T>[K],
+    {} extends Pick<z.input<T>, K> ? "optional" : "required",
+    any
+  >;
+} & { readonly [handlerArgsType]?: z.output<T> };
+
 export type ToConvexArgsValidator<T extends ValidatorInput> =
-  T extends z.ZodObject<infer Shape>
-    ? {
-        [K in keyof Shape]: Shape[K] extends z.ZodType<infer Output>
-          ? Validator<
-              Output,
-              Shape[K] extends z.ZodOptional<any> ? "optional" : "required",
-              any
-            >
-          : never;
-      }
+  T extends z.ZodObject<any>
+    ? ZodObjectArgsValidator<T>
     : T extends ConvexArgsValidator
       ? T
       : ConvexArgsValidator;
 
+/**
+ * Returns for a Zod schema: the client gets Zod's *output* type, while the
+ * handler returns the *input* type, which the schema then parses/transforms.
+ */
 export type ToConvexReturnsValidator<T extends ReturnsValidatorInput> =
-  T extends z.ZodType<infer Output>
-    ? Validator<Output, "required", any>
+  T extends z.ZodType
+    ? Validator<z.output<T>, "required", any> & {
+        readonly [handlerReturnType]?: z.input<T>;
+      }
     : T extends GenericValidator
       ? T
       : GenericValidator;
@@ -343,7 +357,10 @@ export class WithZod<
     ToConvexReturnsValidator<UReturns>
   > {
     if (isZodSchema(validator)) {
-      const convexValidator = zodToConvex(validator as any) as any;
+      // Convex checks the value *after* returnsTransform has run, so this has
+      // to describe Zod's output side. With zodToConvex (the input side) a
+      // `.transform()` made every call fail Convex's return validation.
+      const convexValidator = zodOutputToConvex(validator as any) as any;
       return this._clone({
         ...(this as any).def,
         returnsValidator: convexValidator,

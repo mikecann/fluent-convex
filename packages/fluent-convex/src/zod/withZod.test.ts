@@ -180,6 +180,42 @@ describe("WithZod plugin", () => {
   });
 });
 
+describe("WithZod registered validators", () => {
+  it("registers .default() args as optional", () => {
+    const fn = convex
+      .query()
+      .extend(WithZod)
+      .input(z.object({ s: z.string().default("x") }))
+      .handler(async (_ctx, input) => input.s)
+      .public() as any;
+
+    const args = JSON.parse(fn.exportArgs());
+    expect(args.value.s.optional).toBe(true);
+  });
+
+  it("registers a transformed return by its output, not its input", () => {
+    const fn = convex
+      .query()
+      .extend(WithZod)
+      .returns(z.string().transform((s) => s.length))
+      .handler(async () => "hello")
+      .public() as any;
+
+    // Was {"type":"string"}, so Convex rejected the transformed number.
+    expect(JSON.parse(fn.exportReturns()).type).not.toBe("string");
+  });
+
+  it("runs the returns transform", async () => {
+    const fn = convex
+      .query()
+      .extend(WithZod)
+      .returns(z.string().transform((s) => s.length))
+      .handler(async () => "hello");
+
+    expect(await fn({} as any, {})).toBe(5);
+  });
+});
+
 describe("WithZod errors and async validation", () => {
   it("throws input failures as a ConvexError carrying the Zod issues", async () => {
     const fn = convex

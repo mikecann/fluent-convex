@@ -104,3 +104,33 @@ export type InferredHandlerReturn<
 
 export type InferredArgs<T extends ConvexArgsValidator | undefined> =
   T extends ConvexArgsValidator ? InferArgs<T> : EmptyObject;
+
+/**
+ * Type-only keys a plugin can put on its validator types when the handler sees
+ * something different from what the client sends or gets back. WithZod uses
+ * them because Zod `.default()`s and `.transform()`s run between the two.
+ * They're symbols so they never count as an argument or field: Convex's
+ * `PropertyValidators` is a string-keyed record. Nothing exists at runtime.
+ */
+export declare const handlerArgsType: unique symbol;
+export declare const handlerReturnType: unique symbol;
+
+// Every object type matches an all-optional property, inferring `unknown`
+// when the key isn't really there, hence the `unknown extends H` checks.
+
+/** What `.handler()` receives: the plugin's parsed args type, if it set one. */
+export type HandlerArgs<T extends ConvexArgsValidator | undefined> =
+  T extends { readonly [handlerArgsType]?: infer H }
+    ? unknown extends H
+      ? InferredArgs<T>
+      : H
+    : InferredArgs<T>;
+
+/** What `.handler()` must return when `.returns()` is set. */
+export type HandlerReturn<
+  TReturnsValidator extends ConvexReturnsValidator | undefined,
+> = TReturnsValidator extends { readonly [handlerReturnType]?: infer H }
+  ? unknown extends H
+    ? InferredHandlerReturn<TReturnsValidator, any>
+    : H
+  : InferredHandlerReturn<TReturnsValidator, any>;

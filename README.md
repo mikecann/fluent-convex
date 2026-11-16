@@ -184,6 +184,7 @@ export const listNumbers = convex
 - **Structural conversion** — Zod schemas are automatically converted to Convex validators
 - **Composable** — `.extend(WithZod)` preserves through `.use()`, `.input()`, and `.returns()` chains
 - **Plain validators still work** — mix Zod and Convex validators in the same builder chain
+- **Defaults and transforms are typed on both sides** — clients send Zod's input type (a `.default()` field is optional, a `.transform()` field is its original type) and your handler gets the parsed output. For `.returns()` it's the other way round: the handler returns the input and clients get the transformed output.
 
 When the input fails validation, the function throws a `ConvexError` whose `data` is `{ ZodError: issues }`, so the client sees why even in production. Each issue has `code`, `message` and `path`, plus Zod's other plain fields such as `minimum` (bigints become strings). Refine `params` and reported `input` values are left out, so nothing from the server leaks into the error:
 
