@@ -211,9 +211,23 @@ export type ReturnsValidatorInput = GenericValidator | z.ZodType;
 // referencing it from our .d.ts makes consumers with `skipLibCheck: false`
 // type-check its zod4.d.ts, which currently fails there with TS2589.
 
-/** `.optional()` and `.default()` are what make a registered field optional. */
+/**
+ * `.optional()` and `.default()` are what make a registered field optional,
+ * including when they sit inside a wrapper the converter looks through (the
+ * input stage of a pipe, `.nullable()`, `.readonly()`, `.catch()`, `z.lazy()`).
+ */
 type IsOptionalField<F> =
-  F extends z.ZodOptional<any> | z.ZodDefault<any> ? true : false;
+  F extends z.ZodOptional<any> | z.ZodDefault<any>
+    ? true
+    : F extends z.ZodPipe<infer In, any>
+      ? IsOptionalField<In>
+      : F extends
+            | z.ZodNullable<infer Inner>
+            | z.ZodReadonly<infer Inner>
+            | z.ZodCatch<infer Inner>
+            | z.ZodLazy<infer Inner>
+        ? IsOptionalField<Inner>
+        : false;
 
 /** The value a client may send for a schema, per the registered validator. */
 type ClientValue<F> =
@@ -233,9 +247,25 @@ type ClientValue<F> =
               ? ClientValue<Element>[]
               : F extends z.ZodUnion<infer Options>
                 ? ClientValue<Options[number]>
-                : // Leaves (strings, numbers incl. z.coerce, literals, enums, ...)
-                  // register as their plain type.
-                  z.output<F>;
+                : F extends z.ZodRecord<infer Key, infer Value>
+                  ? Record<z.output<Key> & PropertyKey, ClientValue<Value>>
+                  : F extends z.ZodTuple<infer Items, infer Rest>
+                    ? ClientTuple<Items, Rest>
+                    : // Wrappers the converter unwraps.
+                      F extends
+                          | z.ZodCatch<infer Inner>
+                          | z.ZodReadonly<infer Inner>
+                          | z.ZodLazy<infer Inner>
+                      ? ClientValue<Inner>
+                      : // Leaves (strings, numbers incl. z.coerce, literals,
+                        // enums, ...) register as their plain type.
+                        z.output<F>;
+
+type ClientTuple<Items, Rest> = Items extends readonly unknown[]
+  ? Rest extends z.ZodType
+    ? [...{ [I in keyof Items]: ClientValue<Items[I]> }, ...ClientValue<Rest>[]]
+    : { [I in keyof Items]: ClientValue<Items[I]> }
+  : never;
 
 type ClientObject<Shape> = {
   [K in keyof Shape as IsOptionalField<Shape[K]> extends true
