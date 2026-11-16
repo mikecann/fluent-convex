@@ -1,7 +1,12 @@
 import type { GenericDataModel } from "convex/server";
 import type { GenericValidator, PropertyValidators } from "convex/values";
 import { ConvexBuilderWithHandler } from "./ConvexBuilderWithHandler.js";
-import { InferredArgs, InferredHandlerReturn } from "./types.js";
+import {
+  HandlerArgs,
+  HandlerMatchesCaller,
+  HandlerReturn,
+  InferredHandlerReturn,
+} from "./types.js";
 import { ConvexBuilderDef } from "./types.js";
 import { CallableBuilder } from "./types.js";
 import type { ConvexMiddleware, AnyConvexMiddleware } from "./middleware.js";
@@ -126,22 +131,20 @@ export class ConvexBuilderWithFunctionKind<
   }
 
   handler<
-    TReturn extends InferredHandlerReturn<
-      TReturnsValidator,
-      any
-    > = InferredHandlerReturn<TReturnsValidator, any>,
+    TReturn extends
+      HandlerReturn<TReturnsValidator> = HandlerReturn<TReturnsValidator>,
     THandlerFn extends (
       context: TCurrentContext,
-      input: InferredArgs<TArgsValidator>
+      input: HandlerArgs<TArgsValidator>
     ) => Promise<TReturn> = (
       context: TCurrentContext,
-      input: InferredArgs<TArgsValidator>
+      input: HandlerArgs<TArgsValidator>
     ) => Promise<TReturn>,
   >(
     handlerFn: THandlerFn &
       ((
         context: TCurrentContext,
-        input: InferredArgs<TArgsValidator>
+        input: HandlerArgs<TArgsValidator>
       ) => Promise<TReturn>)
   ): ConvexBuilderWithHandler<
     TDataModel,
@@ -151,7 +154,9 @@ export class ConvexBuilderWithFunctionKind<
     TReturnsValidator,
     InferredHandlerReturn<TReturnsValidator, TReturn>
   > &
-    THandlerFn &
+    (HandlerMatchesCaller<TArgsValidator, TReturnsValidator> extends true
+      ? THandlerFn
+      : unknown) &
     CallableBuilder<
       TCurrentContext,
       TArgsValidator,
@@ -168,7 +173,7 @@ export class ConvexBuilderWithFunctionKind<
     // The handler signature matches what Convex expects: (ctx, args) => Promise<return>
     const rawHandler = async (
       transformedCtx: Context,
-      baseArgs: InferredArgs<TArgsValidator>
+      baseArgs: HandlerArgs<TArgsValidator>
     ) => {
       return handlerFn(transformedCtx as TCurrentContext, baseArgs);
     };
@@ -193,7 +198,9 @@ export class ConvexBuilderWithFunctionKind<
       TReturnsValidator,
       InferredReturn
     > &
-      THandlerFn &
+      (HandlerMatchesCaller<TArgsValidator, TReturnsValidator> extends true
+        ? THandlerFn
+        : unknown) &
       CallableBuilder<TCurrentContext, TArgsValidator, InferredReturn>;
   }
 }

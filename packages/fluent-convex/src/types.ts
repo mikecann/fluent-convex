@@ -22,7 +22,7 @@ export type MaybeDefaultContext<
 > = TExisting extends EmptyObject ? TFallback : TExisting;
 
 type OptionalKeys<T extends Record<PropertyKey, any>> = {
-  [K in keyof T]: T[K] extends GenericValidator
+  [K in keyof T]-?: T[K] extends GenericValidator
     ? T[K]["isOptional"] extends "optional"
       ? K
       : never
@@ -30,7 +30,7 @@ type OptionalKeys<T extends Record<PropertyKey, any>> = {
 }[keyof T];
 
 type RequiredKeys<T extends Record<PropertyKey, any>> = {
-  [K in keyof T]: T[K] extends GenericValidator
+  [K in keyof T]-?: T[K] extends GenericValidator
     ? T[K]["isOptional"] extends "optional"
       ? never
       : K
@@ -104,3 +104,57 @@ export type InferredHandlerReturn<
 
 export type InferredArgs<T extends ConvexArgsValidator | undefined> =
   T extends ConvexArgsValidator ? InferArgs<T> : EmptyObject;
+
+/**
+ * Type-only keys a plugin can put on its validator types when the handler sees
+ * something different from what the client sends or gets back. WithZod uses
+ * them because Zod `.default()`s and `.transform()`s run between the two.
+ * They're symbols so they never count as an argument or field: Convex's
+ * `PropertyValidators` is a string-keyed record. Nothing exists at runtime.
+ */
+export declare const handlerArgsType: unique symbol;
+export declare const handlerReturnType: unique symbol;
+
+// The keys are required (on the type only), so their presence can be checked
+// directly and `unknown`/`any`/`undefined` handler types survive intact.
+
+/** What `.handler()` receives: the plugin's parsed args type, if it set one. */
+export type HandlerArgs<T extends ConvexArgsValidator | undefined> =
+  T extends { readonly [handlerArgsType]: infer H } ? H : InferredArgs<T>;
+
+/** What `.handler()` must return when `.returns()` is set. */
+export type HandlerReturn<
+  TReturnsValidator extends ConvexReturnsValidator | undefined,
+> = TReturnsValidator extends { readonly [handlerReturnType]: infer H }
+  ? H
+  : InferredHandlerReturn<TReturnsValidator, any>;
+
+type Simplify<T> = T extends object ? { [K in keyof T]: T[K] } : T;
+// Strict equality (the usual generic-function trick), so `any` anywhere in
+// either type counts as a difference. Mutual assignability would call
+// `{ a: any }` and `{ a: string }` the same. A false here only costs the
+// ctrl+click overload, never correctness.
+type SameType<A, B> =
+  (<G>() => G extends Simplify<A> ? 1 : 2) extends <G>() => G extends Simplify<B>
+    ? 1
+    : 2
+    ? true
+    : false;
+
+/**
+ * True when the handler sees the same types a direct caller does. `.handler()`
+ * intersects the user's own function type into its result so ctrl+click on a
+ * call lands on their code, but when a plugin's types differ (Zod transforms or
+ * defaults) that extra signature would let calls through with the handler's
+ * types instead of the caller's, so it's left off then.
+ */
+export type HandlerMatchesCaller<
+  TArgsValidator extends ConvexArgsValidator | undefined,
+  TReturnsValidator extends ConvexReturnsValidator | undefined,
+> =
+  SameType<HandlerArgs<TArgsValidator>, InferredArgs<TArgsValidator>> extends true
+    ? SameType<
+        HandlerReturn<TReturnsValidator>,
+        InferredHandlerReturn<TReturnsValidator, any>
+      >
+    : false;

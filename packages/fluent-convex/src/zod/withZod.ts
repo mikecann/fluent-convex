@@ -1,5 +1,5 @@
 import type { z } from "zod/v4";
-import { zodToConvex } from "convex-helpers/server/zod4";
+import { zodToConvex, zodOutputToConvex } from "convex-helpers/server/zod4";
 import type { GenericDataModel } from "convex/server";
 import { ConvexError } from "convex/values";
 import type {
@@ -16,6 +16,8 @@ import type {
   ConvexArgsValidator,
   ConvexReturnsValidator,
   ConvexBuilderDef,
+  handlerArgsType,
+  handlerReturnType,
 } from "../types.js";
 
 // ---------- Duck-type Zod detection ----------
@@ -198,24 +200,118 @@ export type ValidatorInput =
 
 export type ReturnsValidatorInput = GenericValidator | z.ZodType;
 
+// ---- Client-side arg types ----
+// These follow how zodToConvex builds the registered Convex validator, by the
+// schema's structure, so clients are typed by what Convex will accept before
+// Zod runs. Zod's own z.input isn't enough: `z.coerce.number()` has input
+// `unknown` but registers `v.number()`, and `.passthrough()` allows extra keys
+// that the registered `v.object()` rejects.
+//
+// convex-helpers has an exact type for this (ConvexValidatorFromZod), but
+// referencing it from our .d.ts makes consumers with `skipLibCheck: false`
+// type-check its zod4.d.ts, which currently fails there with TS2589.
+
+/**
+ * `.optional()` and `.default()` are what make a registered field optional,
+ * including when they sit inside a wrapper the converter looks through (the
+ * input stage of a pipe, `.nullable()`, `.readonly()`, `.catch()`, `z.lazy()`).
+ */
+type IsOptionalField<F> =
+  F extends z.ZodOptional<any> | z.ZodDefault<any>
+    ? true
+    : F extends z.ZodPipe<infer In, any>
+      ? IsOptionalField<In>
+      : F extends
+            | z.ZodNullable<infer Inner>
+            | z.ZodReadonly<infer Inner>
+            | z.ZodCatch<infer Inner>
+            | z.ZodLazy<infer Inner>
+        ? IsOptionalField<Inner>
+        : false;
+
+/** The value a client may send for a schema, per the registered validator. */
+type ClientValue<F> =
+  // `.transform()` is a pipe from the original schema: Convex checks the input stage.
+  F extends z.ZodPipe<infer In, any>
+    ? ClientValue<In>
+    : // z.preprocess's first stage is a bare transform, registered as v.any().
+      F extends z.ZodTransform<any, any>
+      ? any
+      : F extends z.ZodDefault<infer Inner> | z.ZodOptional<infer Inner>
+        ? ClientValue<Inner> | undefined
+        : F extends z.ZodNullable<infer Inner>
+          ? ClientValue<Inner> | null
+          : F extends z.ZodObject<infer Shape>
+            ? ClientObject<Shape>
+            : F extends z.ZodArray<infer Element>
+              ? ClientValue<Element>[]
+              : F extends z.ZodUnion<infer Options>
+                ? ClientValue<Options[number]>
+                : F extends z.ZodRecord<infer Key, infer Value>
+                  ? IsOptionalField<Value> extends true
+                    ? Partial<Record<z.output<Key> & PropertyKey, ClientValue<Value>>>
+                    : Record<z.output<Key> & PropertyKey, ClientValue<Value>>
+                  : F extends z.ZodTuple<infer Items, infer Rest>
+                    ? ClientTuple<Items, Rest>
+                    : // `.required()` on an object wraps each field like this.
+                      F extends z.ZodNonOptional<infer Inner>
+                      ? Exclude<ClientValue<Inner>, undefined>
+                      : // Wrappers the converter unwraps.
+                      F extends
+                          | z.ZodCatch<infer Inner>
+                          | z.ZodReadonly<infer Inner>
+                          | z.ZodLazy<infer Inner>
+                      ? ClientValue<Inner>
+                      : // Leaves (strings, numbers incl. z.coerce, literals,
+                        // enums, ...) register as their plain type.
+                        z.output<F>;
+
+type ClientTuple<Items, Rest> = Items extends readonly unknown[]
+  ? Rest extends z.ZodType
+    ? [...{ [I in keyof Items]: ClientValue<Items[I]> }, ...ClientValue<Rest>[]]
+    : { [I in keyof Items]: ClientValue<Items[I]> }
+  : never;
+
+type ClientObject<Shape> = {
+  [K in keyof Shape as IsOptionalField<Shape[K]> extends true
+    ? never
+    : K]: ClientValue<Shape[K]>;
+} & {
+  [K in keyof Shape as IsOptionalField<Shape[K]> extends true
+    ? K
+    : never]?: ClientValue<Shape[K]>;
+};
+
+/**
+ * Args for a Zod object schema: one Convex validator type per declared field,
+ * typed by what the client may send. The handler gets Zod's parsed output,
+ * carried on the type-only `handlerArgsType` key.
+ */
+type ZodObjectArgsValidator<T extends z.ZodObject<any>> = {
+  [K in keyof T["shape"]]: Validator<
+    ClientValue<T["shape"][K]>,
+    IsOptionalField<T["shape"][K]> extends true ? "optional" : "required",
+    any
+  >;
+} & { readonly [handlerArgsType]: z.output<T> };
+
 export type ToConvexArgsValidator<T extends ValidatorInput> =
-  T extends z.ZodObject<infer Shape>
-    ? {
-        [K in keyof Shape]: Shape[K] extends z.ZodType<infer Output>
-          ? Validator<
-              Output,
-              Shape[K] extends z.ZodOptional<any> ? "optional" : "required",
-              any
-            >
-          : never;
-      }
+  T extends z.ZodObject<any>
+    ? ZodObjectArgsValidator<T>
     : T extends ConvexArgsValidator
       ? T
       : ConvexArgsValidator;
 
+/**
+ * Returns for a Zod schema: the client gets Zod's *output* type (what the
+ * registered zodOutputToConvex validator checks), while the handler returns
+ * the *input* type, which the schema then parses/transforms.
+ */
 export type ToConvexReturnsValidator<T extends ReturnsValidatorInput> =
-  T extends z.ZodType<infer Output>
-    ? Validator<Output, "required", any>
+  T extends z.ZodType
+    ? Validator<z.output<T>, "required", any> & {
+        readonly [handlerReturnType]: z.input<T>;
+      }
     : T extends GenericValidator
       ? T
       : GenericValidator;
@@ -343,7 +439,10 @@ export class WithZod<
     ToConvexReturnsValidator<UReturns>
   > {
     if (isZodSchema(validator)) {
-      const convexValidator = zodToConvex(validator as any) as any;
+      // Convex checks the value *after* returnsTransform has run, so this has
+      // to describe Zod's output side. With zodToConvex (the input side) a
+      // `.transform()` made every call fail Convex's return validation.
+      const convexValidator = zodOutputToConvex(validator as any) as any;
       return this._clone({
         ...(this as any).def,
         returnsValidator: convexValidator,
