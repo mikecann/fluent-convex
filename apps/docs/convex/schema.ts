@@ -21,4 +21,11 @@ export default defineSchema({
     ),
     createdBy: v.optional(v.string()),
   }).index("by_completed", ["completed"]),
+
+  // One row per write to a public demo, so the rate limit in seed.ts counts
+  // writes rather than the rows still in the demo tables (which anyone can
+  // clear, resetting the count). Pruned by the hourly reset.
+  demoWrites: defineTable({
+    table: v.union(v.literal("numbers"), v.literal("tasks")),
+  }).index("by_table", ["table"]),
 });

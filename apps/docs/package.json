@@ -13,13 +13,13 @@
     "typecheck": "tsc -b",
     "lint": "eslint .",
     "preview": "vite preview",
-    "deploy": "npx @convex-dev/self-hosting deploy",
-    "deploy:static": "npx @convex-dev/self-hosting upload --build --prod"
+    "deploy": "npx @convex-dev/static-hosting deploy --component selfHosting",
+    "deploy:static": "npx @convex-dev/static-hosting upload --build --prod --component selfHosting"
   },
   "dependencies": {
     "@auth/core": "^0.41.3",
     "@convex-dev/auth": "^0.0.96",
-    "@convex-dev/self-hosting": "^0.1.1",
+    "@convex-dev/static-hosting": "^0.2.2",
     "convex": "^1.46.0",
     "convex-helpers": "^0.1.127",
     "fluent-convex": "*",

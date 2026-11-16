@@ -50,4 +50,5 @@ jobs:
         working-directory: apps/docs
         env:
           CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
-        run: npx @convex-dev/self-hosting upload --build --prod
+        # The component keeps its old instance name, see convex/convex.config.ts
+        run: npx @convex-dev/static-hosting upload --build --prod --component selfHosting

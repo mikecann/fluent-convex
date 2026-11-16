@@ -2,7 +2,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { ConvexAuthProvider } from "@convex-dev/auth/react";
 import { ConvexReactClient } from "convex/react";
-import { getConvexUrl } from "@convex-dev/self-hosting";
+import { getConvexUrl } from "@convex-dev/static-hosting";
 import { RouteProvider } from "./router";
 import "./index.css";
 import App from "./App.tsx";

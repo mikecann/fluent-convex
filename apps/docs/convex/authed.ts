@@ -61,6 +61,7 @@ export const addTask = authedMutation
 export const toggleTask = authedMutation
   .input({ id: v.id("tasks") })
   .handler(async (ctx, input) => {
+    await checkDemoRateLimit(ctx, "tasks"); // the demo is public, so cap writes
     const task = await ctx.db.get("tasks", input.id);
     if (!task) throw new Error("Task not found");
     await ctx.db.patch("tasks", input.id, { completed: !task.completed });
@@ -73,6 +74,7 @@ export const toggleTask = authedMutation
 export const deleteTask = authedMutation
   .input({ id: v.id("tasks") })
   .handler(async (ctx, input) => {
+    await checkDemoRateLimit(ctx, "tasks"); // the demo is public, so cap writes
     await ctx.db.delete("tasks", input.id);
   })
   .public();

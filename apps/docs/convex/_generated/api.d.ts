@@ -20,7 +20,6 @@ import type * as http from "../http.js";
 import type * as middleware from "../middleware.js";
 import type * as plugin from "../plugin.js";
 import type * as seed from "../seed.js";
-import type * as staticHosting from "../staticHosting.js";
 import type * as validators from "../validators.js";
 
 import type {
@@ -42,7 +41,6 @@ declare const fullApi: ApiFromModules<{
   middleware: typeof middleware;
   plugin: typeof plugin;
   seed: typeof seed;
-  staticHosting: typeof staticHosting;
   validators: typeof validators;
 }>;
 
@@ -73,72 +71,5 @@ export declare const internal: FilterApi<
 >;
 
 export declare const components: {
-  selfHosting: {
-    lib: {
-      gcOldAssets: FunctionReference<
-        "mutation",
-        "internal",
-        { currentDeploymentId: string },
-        { blobIds: Array<string>; storageIds: Array<string> }
-      >;
-      generateUploadUrl: FunctionReference<"mutation", "internal", {}, string>;
-      getByPath: FunctionReference<
-        "query",
-        "internal",
-        { path: string },
-        {
-          _creationTime: number;
-          _id: string;
-          blobId?: string;
-          contentType: string;
-          deploymentId: string;
-          path: string;
-          storageId?: string;
-        } | null
-      >;
-      getCurrentDeployment: FunctionReference<
-        "query",
-        "internal",
-        {},
-        {
-          _creationTime: number;
-          _id: string;
-          currentDeploymentId: string;
-          deployedAt: number;
-        } | null
-      >;
-      listAssets: FunctionReference<
-        "query",
-        "internal",
-        { limit?: number },
-        Array<{
-          _creationTime: number;
-          _id: string;
-          blobId?: string;
-          contentType: string;
-          deploymentId: string;
-          path: string;
-          storageId?: string;
-        }>
-      >;
-      recordAsset: FunctionReference<
-        "mutation",
-        "internal",
-        {
-          blobId?: string;
-          contentType: string;
-          deploymentId: string;
-          path: string;
-          storageId?: string;
-        },
-        { oldBlobId: string | null; oldStorageId: string | null }
-      >;
-      setCurrentDeployment: FunctionReference<
-        "mutation",
-        "internal",
-        { deploymentId: string },
-        null
-      >;
-    };
-  };
+  selfHosting: import("@convex-dev/static-hosting/_generated/component.js").ComponentApi<"selfHosting">;
 };
