@@ -1,5 +1,9 @@
 import type { z } from "zod/v4";
-import { zodToConvex, zodOutputToConvex } from "convex-helpers/server/zod4";
+import {
+  zodToConvex,
+  zodOutputToConvex,
+  type ConvexValidatorFromZod,
+} from "convex-helpers/server/zod4";
 import type { GenericDataModel } from "convex/server";
 import { ConvexError } from "convex/values";
 import type {
@@ -201,18 +205,16 @@ export type ValidatorInput =
 export type ReturnsValidatorInput = GenericValidator | z.ZodType;
 
 /**
- * Args for a Zod object schema. The client sends Zod's *input* type (a
- * `.default()` field is optional, a `.transform()` field is the pre-transform
- * type), which is also what the converted Convex validator accepts. The handler
- * gets Zod's *output* type, carried on the type-only `handlerArgsType` key.
+ * Args for a Zod object schema. Clients get the type of the Convex validator
+ * that zodToConvex actually registers (convex-helpers' own type for it), so the
+ * client types can't promise more than Convex will accept: a `.default()` field
+ * is optional, a `.transform()` field is its original type, `z.coerce.number()`
+ * is a number, and `.passthrough()` doesn't allow extra keys. The handler gets
+ * Zod's parsed output, carried on the type-only `handlerArgsType` key.
  */
 type ZodObjectArgsValidator<T extends z.ZodObject<any>> = {
-  [K in keyof z.input<T>]-?: Validator<
-    z.input<T>[K],
-    {} extends Pick<z.input<T>, K> ? "optional" : "required",
-    any
-  >;
-} & { readonly [handlerArgsType]?: z.output<T> };
+  [K in keyof T["shape"]]: ConvexValidatorFromZod<T["shape"][K], "required">;
+} & { readonly [handlerArgsType]: z.output<T> };
 
 export type ToConvexArgsValidator<T extends ValidatorInput> =
   T extends z.ZodObject<any>
@@ -222,13 +224,14 @@ export type ToConvexArgsValidator<T extends ValidatorInput> =
       : ConvexArgsValidator;
 
 /**
- * Returns for a Zod schema: the client gets Zod's *output* type, while the
- * handler returns the *input* type, which the schema then parses/transforms.
+ * Returns for a Zod schema: the client gets Zod's *output* type (what the
+ * registered zodOutputToConvex validator checks), while the handler returns
+ * the *input* type, which the schema then parses/transforms.
  */
 export type ToConvexReturnsValidator<T extends ReturnsValidatorInput> =
   T extends z.ZodType
     ? Validator<z.output<T>, "required", any> & {
-        readonly [handlerReturnType]?: z.input<T>;
+        readonly [handlerReturnType]: z.input<T>;
       }
     : T extends GenericValidator
       ? T

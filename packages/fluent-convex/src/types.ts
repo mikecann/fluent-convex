@@ -22,7 +22,7 @@ export type MaybeDefaultContext<
 > = TExisting extends EmptyObject ? TFallback : TExisting;
 
 type OptionalKeys<T extends Record<PropertyKey, any>> = {
-  [K in keyof T]: T[K] extends GenericValidator
+  [K in keyof T]-?: T[K] extends GenericValidator
     ? T[K]["isOptional"] extends "optional"
       ? K
       : never
@@ -30,7 +30,7 @@ type OptionalKeys<T extends Record<PropertyKey, any>> = {
 }[keyof T];
 
 type RequiredKeys<T extends Record<PropertyKey, any>> = {
-  [K in keyof T]: T[K] extends GenericValidator
+  [K in keyof T]-?: T[K] extends GenericValidator
     ? T[K]["isOptional"] extends "optional"
       ? never
       : K
@@ -115,22 +115,36 @@ export type InferredArgs<T extends ConvexArgsValidator | undefined> =
 export declare const handlerArgsType: unique symbol;
 export declare const handlerReturnType: unique symbol;
 
-// Every object type matches an all-optional property, inferring `unknown`
-// when the key isn't really there, hence the `unknown extends H` checks.
+// The keys are required (on the type only), so their presence can be checked
+// directly and `unknown`/`any`/`undefined` handler types survive intact.
 
 /** What `.handler()` receives: the plugin's parsed args type, if it set one. */
 export type HandlerArgs<T extends ConvexArgsValidator | undefined> =
-  T extends { readonly [handlerArgsType]?: infer H }
-    ? unknown extends H
-      ? InferredArgs<T>
-      : H
-    : InferredArgs<T>;
+  T extends { readonly [handlerArgsType]: infer H } ? H : InferredArgs<T>;
 
 /** What `.handler()` must return when `.returns()` is set. */
 export type HandlerReturn<
   TReturnsValidator extends ConvexReturnsValidator | undefined,
-> = TReturnsValidator extends { readonly [handlerReturnType]?: infer H }
-  ? unknown extends H
-    ? InferredHandlerReturn<TReturnsValidator, any>
-    : H
+> = TReturnsValidator extends { readonly [handlerReturnType]: infer H }
+  ? H
   : InferredHandlerReturn<TReturnsValidator, any>;
+
+type SameType<A, B> = [A] extends [B] ? ([B] extends [A] ? true : false) : false;
+
+/**
+ * True when the handler sees the same types a direct caller does. `.handler()`
+ * intersects the user's own function type into its result so ctrl+click on a
+ * call lands on their code, but when a plugin's types differ (Zod transforms or
+ * defaults) that extra signature would let calls through with the handler's
+ * types instead of the caller's, so it's left off then.
+ */
+export type HandlerMatchesCaller<
+  TArgsValidator extends ConvexArgsValidator | undefined,
+  TReturnsValidator extends ConvexReturnsValidator | undefined,
+> =
+  SameType<HandlerArgs<TArgsValidator>, InferredArgs<TArgsValidator>> extends true
+    ? SameType<
+        HandlerReturn<TReturnsValidator>,
+        InferredHandlerReturn<TReturnsValidator, any>
+      >
+    : false;

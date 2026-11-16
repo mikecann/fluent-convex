@@ -272,6 +272,62 @@ describe("WithZod input vs output types", () => {
       .handler(async () => 5);
   });
 
+  it("types coerced and passthrough fields by what Convex will accept", () => {
+    const fn = convex
+      .query()
+      .extend(WithZod)
+      .input(z.object({ n: z.coerce.number() }).passthrough())
+      .handler(async () => null)
+      .public();
+
+    assertType<ClientArgs<typeof fn>>({ n: 1 });
+    // @ts-expect-error the registered validator is v.number(), coercion runs later
+    assertType<ClientArgs<typeof fn>>({ n: "1" });
+    // @ts-expect-error only declared fields are registered
+    assertType<ClientArgs<typeof fn>>({ n: 1, extra: true });
+  });
+
+  it("doesn't add undefined to the client's arg keys", () => {
+    const fn = convex
+      .query()
+      .extend(WithZod)
+      .input(z.object({ n: z.number() }))
+      .handler(async () => null)
+      .public();
+
+    type Raw = typeof fn extends RegisteredQuery<any, infer A, any> ? A : never;
+    expectTypeOf<keyof Raw>().toEqualTypeOf<"n">();
+  });
+
+  it("lets a defaulted return come back undefined", () => {
+    convex
+      .query()
+      .extend(WithZod)
+      .returns(z.string().default("x"))
+      .handler(async () => undefined);
+  });
+
+  it("keeps unknown handler return types from preprocess", () => {
+    convex
+      .query()
+      .extend(WithZod)
+      .returns(z.preprocess(Number, z.number()))
+      .handler(async () => "42");
+  });
+
+  it("types direct calls by what the caller passes and gets back", () => {
+    const f = convex
+      .query()
+      .extend(WithZod)
+      .input(z.object({ n: z.string().transform(Number) }))
+      .returns(z.string().transform((s) => s.length))
+      .handler(async (_ctx, input) => String(input.n));
+
+    expectTypeOf(f).returns.resolves.toEqualTypeOf<number>();
+    // @ts-expect-error a direct call goes through Zod, so it takes the string
+    void f({} as any, { n: 42 });
+  });
+
   it("leaves plain Zod schemas the same on both sides", () => {
     const fn = convex
       .query()
