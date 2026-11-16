@@ -129,7 +129,17 @@ export type HandlerReturn<
   ? H
   : InferredHandlerReturn<TReturnsValidator, any>;
 
-type SameType<A, B> = [A] extends [B] ? ([B] extends [A] ? true : false) : false;
+type Simplify<T> = T extends object ? { [K in keyof T]: T[K] } : T;
+// Strict equality (the usual generic-function trick), so `any` anywhere in
+// either type counts as a difference. Mutual assignability would call
+// `{ a: any }` and `{ a: string }` the same. A false here only costs the
+// ctrl+click overload, never correctness.
+type SameType<A, B> =
+  (<G>() => G extends Simplify<A> ? 1 : 2) extends <G>() => G extends Simplify<B>
+    ? 1
+    : 2
+    ? true
+    : false;
 
 /**
  * True when the handler sees the same types a direct caller does. `.handler()`

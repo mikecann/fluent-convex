@@ -328,6 +328,45 @@ describe("WithZod input vs output types", () => {
     void f({} as any, { n: 42 });
   });
 
+  it("follows the registered validator for coerce, preprocess and nested fields", () => {
+    const fn = convex
+      .query()
+      .extend(WithZod)
+      .input(
+        z.object({
+          a: z.coerce.number(),
+          b: z.coerce.number().transform(String),
+          c: z.preprocess(Number, z.number()),
+          d: z.object({ n: z.coerce.number() }).passthrough(),
+          e: z.any(),
+        })
+      )
+      .handler(async (_ctx, input) => {
+        expectTypeOf(input.b).toEqualTypeOf<string>();
+        return null;
+      })
+      .public();
+
+    type A = ClientArgs<typeof fn>;
+    expectTypeOf<A["a"]>().toEqualTypeOf<number>();
+    expectTypeOf<A["b"]>().toEqualTypeOf<number>();
+    assertType<A>({ a: 1, b: 2, c: "42", d: { n: 1 }, e: null });
+    // @ts-expect-error coerce fields are required, as registered
+    assertType<A>({ b: 2, c: 1, d: { n: 1 }, e: null });
+    // @ts-expect-error nested coerce is a number in the registered validator
+    assertType<A>({ a: 1, b: 2, c: 1, d: { n: "1" }, e: null });
+  });
+
+  it("doesn't let any in a transform bring back the raw handler signature", () => {
+    const f = convex
+      .query()
+      .extend(WithZod)
+      .returns(z.any().transform(() => 123))
+      .handler(async () => "raw");
+
+    expectTypeOf(f).returns.resolves.not.toEqualTypeOf<string>();
+  });
+
   it("leaves plain Zod schemas the same on both sides", () => {
     const fn = convex
       .query()
