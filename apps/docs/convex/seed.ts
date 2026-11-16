@@ -4,7 +4,8 @@
  * The live demos call public functions that anyone can hit directly, so:
  *   - an hourly cron clears the numbers and tasks tables, then inserts a
  *     curated set of example data
- *   - checkDemoRateLimit caps how fast the demos can add rows in between
+ *   - checkDemoRateLimit caps how fast the demos can write (add or delete)
+ *     in between
  *   - addTask caps title length, so rows stay small
  */
 
@@ -41,6 +42,27 @@ export const resetDemoData = internalMutation({
     // Each table resets in its own transactions, so one can't hold up the other
     await ctx.scheduler.runAfter(0, internal.seed.resetNumbers, {});
     await ctx.scheduler.runAfter(0, internal.seed.resetTasks, {});
+    await ctx.scheduler.runAfter(0, internal.seed.pruneDemoWrites, {});
+  },
+});
+
+// Only the last minute of demoWrites matters to the rate limit
+const DEMO_WRITES_BATCH_SIZE = 500;
+
+export const pruneDemoWrites = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const before = Date.now() - 60_000;
+    const batch = await ctx.db
+      .query("demoWrites")
+      .withIndex("by_creation_time", (q) => q.lt("_creationTime", before))
+      .take(DEMO_WRITES_BATCH_SIZE);
+    for (const doc of batch) {
+      await ctx.db.delete("demoWrites", doc._id);
+    }
+    if (batch.length === DEMO_WRITES_BATCH_SIZE) {
+      await ctx.scheduler.runAfter(0, internal.seed.pruneDemoWrites, {});
+    }
   },
 });
 
@@ -87,30 +109,35 @@ export const resetTasks = internalMutation({
   },
 });
 
-// Most rows each demo table accepts per rolling minute, across all callers.
-// Together with the hourly reset, this keeps both tables to a few thousand
-// rows at most.
-const DEMO_INSERTS_PER_MINUTE = {
+// Most writes (adds and deletes) each demo table accepts per rolling minute,
+// across all callers. Together with the hourly reset, this keeps both tables
+// to a few thousand rows at most.
+const DEMO_WRITES_PER_MINUTE = {
   numbers: 60,
   tasks: 20,
 };
 
 /**
- * Call before a public demo function inserts into `table`. Throws once the
- * table has had too many inserts in the last minute.
+ * Call before a public demo function writes to `table`. Throws once the table
+ * has had too many writes in the last minute.
+ *
+ * Counts its own demoWrites rows rather than the demo rows themselves, so
+ * clearing a demo table (deleteAllNumbers, deleteTask) can't reset the count.
+ * See https://github.com/mikecann/fluent-convex/issues/6
  */
 export async function checkDemoRateLimit(
   ctx: MutationCtx,
-  table: keyof typeof DEMO_INSERTS_PER_MINUTE
+  table: keyof typeof DEMO_WRITES_PER_MINUTE
 ) {
-  const limit = DEMO_INSERTS_PER_MINUTE[table];
+  const limit = DEMO_WRITES_PER_MINUTE[table];
   const recent = await ctx.db
-    .query(table)
-    .withIndex("by_creation_time", (q) =>
-      q.gt("_creationTime", Date.now() - 60_000)
+    .query("demoWrites")
+    .withIndex("by_table", (q) =>
+      q.eq("table", table).gt("_creationTime", Date.now() - 60_000)
     )
     .take(limit);
   if (recent.length >= limit) {
     throw new ConvexError("The live demo is busy. Try again in a minute.");
   }
+  await ctx.db.insert("demoWrites", { table });
 }

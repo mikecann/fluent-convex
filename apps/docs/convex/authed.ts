@@ -73,6 +73,7 @@ export const toggleTask = authedMutation
 export const deleteTask = authedMutation
   .input({ id: v.id("tasks") })
   .handler(async (ctx, input) => {
+    await checkDemoRateLimit(ctx, "tasks"); // the demo is public, so cap writes
     await ctx.db.delete("tasks", input.id);
   })
   .public();

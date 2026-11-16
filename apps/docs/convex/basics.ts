@@ -43,6 +43,7 @@ export const deleteAllNumbers = convex
   .mutation()
   .input({})
   .handler(async (ctx) => {
+    await checkDemoRateLimit(ctx, "numbers"); // the demo is public, so cap writes
     const all = await ctx.db.query("numbers").collect();
     for (const doc of all) {
       await ctx.db.delete("numbers", doc._id);
